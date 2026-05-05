@@ -23,9 +23,9 @@ export default async function IncidentesPage() {
   return (
     <div className="px-4 py-5">
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-dhl-dark">Directo a Andrea 🔧</h1>
+        <h1 className="text-xl font-bold text-dhl-dark">Directo a Office Manager 🔧</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
-          Reporta incidentes para que lleguen directo a Andrea y se gestionen con los proveedores
+          Reporta incidentes para que lleguen directo al Office Manager y se gestionen con los proveedores
         </p>
       </div>
 

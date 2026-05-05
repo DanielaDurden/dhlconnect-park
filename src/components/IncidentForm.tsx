@@ -69,7 +69,7 @@ export default function IncidentForm({ profile }: Props) {
         <div className="text-5xl mb-3">✅</div>
         <h3 className="font-bold text-green-700 text-lg">Reporte enviado</h3>
         <p className="text-green-600 text-sm mt-1">
-          Andrea recibirá tu solicitud y coordinará con los proveedores.
+          El Office Manager recibirá tu solicitud y coordinará con los proveedores.
         </p>
       </div>
     );
@@ -140,7 +140,7 @@ export default function IncidentForm({ profile }: Props) {
         disabled={!category || !description.trim() || loading}
         className="w-full bg-dhl-red text-white font-bold py-4 rounded-2xl hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
       >
-        {loading ? "Enviando..." : "Enviar reporte a Andrea"}
+        {loading ? "Enviando..." : "Enviar reporte al Office Manager"}
       </button>
 
       <p className="text-center text-xs text-dhl-gray">

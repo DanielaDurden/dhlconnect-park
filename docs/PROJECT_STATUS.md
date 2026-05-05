@@ -138,7 +138,7 @@ resend/client.ts      ← cliente Resend
 - "Home Office" = trabaja desde casa, NO va a CE → puesto queda libre
 - Vista "Ritmo del Equipo" muestra estado de todos los colegas hoy
 
-### Módulo Incidentes (Directo a Andrea)
+### Módulo Incidentes (Directo a Office Manager)
 - Categorías: Limpieza / Insumos-Kitchenette / Mantenimiento / Otro
 - Canal único → evita duplicidades con Aramark/Mantenimiento
 - Admin ve todos los incidentes abiertos en el panel

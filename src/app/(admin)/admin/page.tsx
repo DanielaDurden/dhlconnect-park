@@ -45,7 +45,7 @@ export default async function AdminDashboard() {
       {/* Recent Incidents */}
       <div className="bg-white rounded-2xl border border-dhl-mid-gray shadow-sm overflow-hidden">
         <div className="bg-dhl-red px-4 py-3">
-          <h2 className="text-white font-bold text-sm">Incidentes abiertos para Andrea</h2>
+          <h2 className="text-white font-bold text-sm">Incidentes abiertos para Office Manager</h2>
         </div>
         {recentIncidents && recentIncidents.length > 0 ? (
           <div className="divide-y divide-dhl-mid-gray">

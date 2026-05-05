@@ -29,7 +29,7 @@ const MODULES = [
   {
     href: "/incidentes",
     emoji: "🔧",
-    title: "Directo a Andrea",
+    title: "Directo a Office Manager",
     description: "Reporta incidentes de limpieza o mantenimiento",
     color: "border-l-orange-500",
     bg: "bg-orange-50",
