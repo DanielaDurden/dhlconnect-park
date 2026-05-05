@@ -29,14 +29,18 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Rutas protegidas — ajustar según estructura de roles
-  const isProtected =
-    request.nextUrl.pathname.startsWith("/admin") ||
-    request.nextUrl.pathname.startsWith("/dashboard");
+  const pathname = request.nextUrl.pathname;
+  const isPublicRoute = pathname === "/login" || pathname.startsWith("/api/auth");
 
-  if (!user && isProtected) {
+  if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/home";
     return NextResponse.redirect(url);
   }
 

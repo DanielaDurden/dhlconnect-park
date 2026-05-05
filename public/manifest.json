@@ -1,10 +1,10 @@
 {
-  "name": "DHL Desk & Parking",
-  "short_name": "DHL Reservas",
-  "description": "Reserva tu puesto de trabajo y estacionamiento en DHL",
-  "start_url": "/",
+  "name": "DHL Connect & Park",
+  "short_name": "DHL C&P",
+  "description": "Reserva tu puesto y estacionamiento en DHL",
+  "start_url": "/home",
   "display": "standalone",
-  "background_color": "#0a0a0a",
+  "background_color": "#D40511",
   "theme_color": "#D40511",
   "orientation": "portrait",
   "icons": [
@@ -20,5 +20,6 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["productivity", "business"]
 }

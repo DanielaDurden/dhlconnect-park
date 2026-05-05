@@ -4,24 +4,30 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #1A1A1A;
+  --dhl-red: #D40511;
+  --dhl-yellow: #FFCC00;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: #F5F5F5;
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* PWA standalone mode */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
   }
 }
