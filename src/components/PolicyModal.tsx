@@ -44,7 +44,6 @@ export default function PolicyModal() {
             </svg>
             <div>
               <h2 className="text-dhl-dark font-bold text-xl">¡Bienvenido!</h2>
-              <p className="text-dhl-dark/70 text-sm">Centro de Energía DHL</p>
             </div>
           </div>
         </div>
