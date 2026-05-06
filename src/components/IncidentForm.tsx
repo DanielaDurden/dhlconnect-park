@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { IncidentCategory, Profile } from "@/types";
@@ -9,11 +9,44 @@ interface Props {
   profile: Pick<Profile, "id" | "full_name">;
 }
 
-const CATEGORIES: { value: IncidentCategory; label: string; emoji: string }[] = [
-  { value: "cleaning", label: "Limpieza", emoji: "🧹" },
-  { value: "supplies", label: "Insumos / Kitchenette", emoji: "📦" },
-  { value: "maintenance", label: "Mantenimiento", emoji: "🔧" },
-  { value: "other", label: "Otro", emoji: "📋" },
+const CATEGORIES: { value: IncidentCategory; label: string; icon: React.ReactNode }[] = [
+  {
+    value: "cleaning",
+    label: "Limpieza",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0" aria-hidden="true">
+        <path d="M3 22v-4l9-9 4 4-9 9H3Z"/><path d="m15 5 4 4"/><path d="m9.5 11.5 1.5 1.5"/>
+      </svg>
+    ),
+  },
+  {
+    value: "supplies",
+    label: "Insumos / Kitchenette",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0" aria-hidden="true">
+        <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+        <path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+      </svg>
+    ),
+  },
+  {
+    value: "maintenance",
+    label: "Mantenimiento",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0" aria-hidden="true">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+      </svg>
+    ),
+  },
+  {
+    value: "other",
+    label: "Otro",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+      </svg>
+    ),
+  },
 ];
 
 const LOCATIONS = [
@@ -66,7 +99,9 @@ export default function IncidentForm({ profile }: Props) {
   if (success) {
     return (
       <div className="bg-green-50 border border-green-300 rounded-2xl p-8 text-center">
-        <div className="text-5xl mb-3">✅</div>
+        <div className="w-14 h-14 rounded-full bg-green-500 flex items-center justify-center mx-auto mb-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
         <h3 className="font-bold text-green-700 text-lg">Reporte enviado</h3>
         <p className="text-green-600 text-sm mt-1">
           El Office Manager recibirá tu solicitud y coordinará con los proveedores.
@@ -92,7 +127,7 @@ export default function IncidentForm({ profile }: Props) {
                   : "border-dhl-mid-gray bg-white text-dhl-dark hover:border-dhl-gray"
               }`}
             >
-              <span className="text-xl">{cat.emoji}</span>
+              {cat.icon}
               <span className="text-xs">{cat.label}</span>
             </button>
           ))}

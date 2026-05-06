@@ -26,8 +26,9 @@ export default async function AdminLayout({
       <header className="bg-dhl-dark text-white sticky top-0 z-40 shadow-md">
         <div className="flex items-center justify-between px-4 h-14 max-w-4xl mx-auto">
           <div className="flex items-center gap-3">
-            <Link href="/admin">
-              <Image src="/dhl-logo.svg" alt="DHL" width={60} height={9} className="brightness-0 invert" />
+            {/* Logo siempre sobre fondo amarillo — brand rule */}
+            <Link href="/admin" className="bg-dhl-yellow rounded-lg px-3 py-1.5 flex items-center">
+              <Image src="/dhl-logo.svg" alt="DHL" width={52} height={8} />
             </Link>
             <span className="text-dhl-yellow font-bold text-sm">Admin Panel</span>
           </div>

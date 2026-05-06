@@ -12,7 +12,7 @@ const config: Config = {
       colors: {
         dhl: {
           red: "#D40511",
-          yellow: "#FFCC00",
+          yellow: "#FFCD05",
           dark: "#1A1A1A",
           gray: "#666666",
           "light-gray": "#F5F5F5",

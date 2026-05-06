@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import StatusForm from "@/components/StatusForm";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +8,9 @@ export default async function StatusPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
+  const admin = createAdminClient();
+
+  const { data: profile } = await admin
     .from("profiles")
     .select("id, full_name, area")
     .eq("id", user!.id)
@@ -25,15 +28,13 @@ export default async function StatusPage() {
     return d.toISOString().split("T")[0];
   });
 
-  const { data: statuses } = await supabase
+  const { data: statuses } = await admin
     .from("user_day_status")
     .select("*")
     .eq("user_id", user!.id)
     .in("date", weekDates);
-
-  // Team statuses for today
   const today = new Date().toISOString().split("T")[0];
-  const { data: teamStatuses } = await supabase
+  const { data: teamStatuses } = await admin
     .from("user_day_status")
     .select("*, profiles!inner(full_name, area)")
     .eq("date", today);
@@ -41,7 +42,7 @@ export default async function StatusPage() {
   return (
     <div className="px-4 py-5">
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-dhl-dark">Mi Estado 📅</h1>
+        <h1 className="text-xl font-bold text-dhl-dark">Mi Estado</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
           Marca dónde estarás trabajando cada día
         </p>

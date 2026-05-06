@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { DayStatus, Profile, UserDayStatus } from "@/types";
@@ -20,11 +20,60 @@ interface Props {
   today: string;
 }
 
-const STATUS_OPTIONS: { value: DayStatus; label: string; emoji: string; description: string }[] = [
-  { value: "office", label: "En Oficina", emoji: "🏢", description: "Estaré en el CE" },
-  { value: "site", label: "En Site", emoji: "🏭", description: "Voy a un centro de distribución" },
-  { value: "home_office", label: "Home Office", emoji: "🏠", description: "Trabajo desde casa" },
-  { value: "vacation", label: "Vacaciones", emoji: "🏖️", description: "Fuera de disponibilidad" },
+const STATUS_OPTIONS: { value: DayStatus; label: string; icon: React.ReactNode; description: string; colors: string }[] = [
+  {
+    value: "office",
+    label: "En Oficina",
+    description: "Estaré en el CE",
+    colors: "border-green-500 bg-green-50 text-green-800",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+        <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
+        <path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/>
+        <path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/>
+        <path d="M8 10h.01"/><path d="M8 14h.01"/>
+      </svg>
+    ),
+  },
+  {
+    value: "site",
+    label: "En Site",
+    description: "Voy a un centro de distribución",
+    colors: "border-purple-500 bg-purple-50 text-purple-800",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+        <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
+        <path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>
+      </svg>
+    ),
+  },
+  {
+    value: "home_office",
+    label: "Home Office",
+    description: "Trabajo desde casa",
+    colors: "border-blue-500 bg-blue-50 text-blue-800",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+  },
+  {
+    value: "vacation",
+    label: "Vacaciones",
+    description: "Fuera de disponibilidad",
+    colors: "border-orange-400 bg-orange-50 text-orange-800",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2"/><path d="M12 20v2"/>
+        <path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>
+        <path d="M2 12h2"/><path d="M20 12h2"/>
+        <path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+      </svg>
+    ),
+  },
 ];
 
 function getStatusColor(status: DayStatus): string {
@@ -73,7 +122,7 @@ export default function StatusForm({ profile, weekDates, myStatuses, teamStatuse
 
     if (!error) {
       setLocalStatuses((prev) => ({ ...prev, [date]: status }));
-      showToast("Estado actualizado ✅");
+      showToast("Estado actualizado");
       router.refresh();
     } else {
       showToast("Error al guardar. Intenta de nuevo.");
@@ -101,8 +150,8 @@ export default function StatusForm({ profile, weekDates, myStatuses, teamStatuse
 
       {/* Weekly Calendar */}
       <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
-        <div className="bg-dhl-red px-4 py-3">
-          <h2 className="text-white font-bold text-sm">Mi semana</h2>
+        <div className="bg-dhl-yellow px-4 py-3">
+          <h2 className="text-dhl-dark font-bold text-sm">Mi semana</h2>
         </div>
         <div className="p-4 space-y-3">
           {weekDates.map((date) => {
@@ -125,8 +174,8 @@ export default function StatusForm({ profile, weekDates, myStatuses, teamStatuse
                     )}
                   </div>
                   {currentStatus && (
-                    <span className={`text-xs px-2 py-1 rounded-full border font-medium ${getStatusColor(currentStatus)}`}>
-                      {STATUS_OPTIONS.find((o) => o.value === currentStatus)?.emoji}{" "}
+                    <span className={`text-xs px-2 py-1 rounded-full border font-medium flex items-center gap-1 ${getStatusColor(currentStatus)}`}>
+                      {STATUS_OPTIONS.find((o) => o.value === currentStatus)?.icon}
                       {STATUS_OPTIONS.find((o) => o.value === currentStatus)?.label}
                     </span>
                   )}
@@ -145,9 +194,13 @@ export default function StatusForm({ profile, weekDates, myStatuses, teamStatuse
                             : "bg-white border-dhl-mid-gray text-dhl-gray hover:border-dhl-gray"
                         } disabled:opacity-50`}
                       >
-                        <span>{opt.emoji}</span>
+                        <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
+                          {opt.icon}
+                        </div>
                         <span className="truncate">{opt.label}</span>
-                        {currentStatus === opt.value && <span className="ml-auto">✓</span>}
+                        {currentStatus === opt.value && (
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3 ml-auto flex-shrink-0" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -176,7 +229,7 @@ export default function StatusForm({ profile, weekDates, myStatuses, teamStatuse
             return (
               <div key={status}>
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-base">{opt.emoji}</span>
+                  <span className="text-dhl-dark">{opt.icon}</span>
                   <span className="text-xs font-semibold text-dhl-dark">{opt.label}</span>
                   <span className="bg-dhl-mid-gray text-dhl-dark text-xs px-1.5 py-0.5 rounded-full font-bold">
                     {people.length}

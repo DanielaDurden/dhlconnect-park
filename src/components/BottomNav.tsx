@@ -63,7 +63,9 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-colors min-w-0 flex-1 ${
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-colors min-w-0 flex-1 min-h-[44px] justify-center ${
                 isActive
                   ? "text-dhl-red"
                   : "text-dhl-gray hover:text-dhl-dark"
@@ -71,6 +73,9 @@ export default function BottomNav() {
             >
               {item.icon}
               <span className="text-[10px] font-medium truncate">{item.label}</span>
+              {isActive && (
+                <span className="w-4 h-0.5 rounded-full bg-dhl-yellow mt-0.5" aria-hidden="true" />
+              )}
             </Link>
           );
         })}
