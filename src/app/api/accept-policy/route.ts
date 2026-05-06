@@ -9,15 +9,13 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Try DB update — non-blocking, may fail if column not yet in prod
+  // Best-effort DB update — result intentionally ignored
   await supabase
     .from("profiles")
     .update({ policy_accepted_at: new Date().toISOString() })
-    .eq("id", user.id)
-    .then(() => {})
-    .catch(() => {});
+    .eq("id", user.id);
 
-  // Cookie is the authoritative source — always succeeds
+  // Cookie is authoritative — always set, always returns 200
   const response = NextResponse.json({ ok: true });
   response.cookies.set(`policy_accepted_${user.id}`, "1", {
     httpOnly: true,
