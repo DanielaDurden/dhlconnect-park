@@ -9,14 +9,23 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { error } = await supabase
+  // Try DB update — non-blocking, may fail if column not yet in prod
+  await supabase
     .from("profiles")
     .update({ policy_accepted_at: new Date().toISOString() })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .then(() => {})
+    .catch(() => {});
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  // Cookie is the authoritative source — always succeeds
+  const response = NextResponse.json({ ok: true });
+  response.cookies.set(`policy_accepted_${user.id}`, "1", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 365,
+    path: "/",
+  });
 
-  return NextResponse.json({ ok: true });
+  return response;
 }

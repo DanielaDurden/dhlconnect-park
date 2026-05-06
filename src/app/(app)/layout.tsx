@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,6 +20,9 @@ export default async function AppLayout({
 
   if (!user) redirect("/login");
 
+  const cookieStore = await cookies();
+  const policyCookie = cookieStore.get(`policy_accepted_${user.id}`)?.value === "1";
+
   const admin = createAdminClient();
   const { data: profile } = await admin
     .from("profiles")
@@ -26,7 +30,7 @@ export default async function AppLayout({
     .eq("id", user.id)
     .single();
 
-  const needsPolicy = !profile?.policy_accepted_at;
+  const needsPolicy = !policyCookie && !profile?.policy_accepted_at;
 
   return (
     <div className="min-h-screen bg-dhl-light-gray flex flex-col">
