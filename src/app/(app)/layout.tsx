@@ -30,6 +30,8 @@ export default async function AppLayout({
     .eq("id", user.id)
     .single();
 
+  const userRole = (profile?.role ?? "professional") as import("@/types").UserRole;
+
   const needsPolicy = !policyCookie && !profile?.policy_accepted_at;
 
   return (
@@ -71,7 +73,7 @@ export default async function AppLayout({
       </main>
 
       {/* Bottom Navigation */}
-      <BottomNav />
+      <BottomNav role={userRole} />
     </div>
   );
 }

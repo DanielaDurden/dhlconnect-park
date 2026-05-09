@@ -2,91 +2,81 @@ import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import Link from "next/link";
+import type { UserRole } from "@/types";
+import { getRiffsLevel } from "@/types";
+
+const ROLE_LABEL: Record<string, string> = {
+  executive:    "Ejecutivo",
+  professional: "Profesional",
+  guest:        "Visita",
+  admin:        "Admin",
+  client:       "Colaborador",
+};
+
+const ROLE_COLOR: Record<string, string> = {
+  executive:    "bg-dhl-yellow text-dhl-dark",
+  professional: "bg-blue-100 text-blue-700",
+  guest:        "bg-purple-100 text-purple-700",
+  admin:        "bg-dhl-red text-white",
+  client:       "bg-blue-100 text-blue-700",
+};
 
 const MODULES = [
   {
     href: "/desks",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-6 h-6"
-        aria-hidden="true"
-      >
-        <rect width="18" height="18" x="3" y="3" rx="2"/>
-        <path d="M3 9h18"/>
-        <path d="M9 21V9"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6" aria-hidden="true">
+        <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/>
       </svg>
     ),
     title: "Mi Espacio",
     description: "Reserva y gestiona tu puesto de trabajo",
+    roles: ["executive","professional","guest","client","admin"],
   },
   {
     href: "/parking",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-6 h-6"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M9 12h4a2 2 0 1 0 0-4H9v8"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><path d="M9 12h4a2 2 0 1 0 0-4H9v8"/>
       </svg>
     ),
     title: "Smart Parking",
     description: "Reserva tu estacionamiento disponible",
+    roles: ["executive","professional","guest","client","admin"],
+  },
+  {
+    href: "/planner",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6" aria-hidden="true">
+        <rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/>
+      </svg>
+    ),
+    title: "Planificador Semanal",
+    description: "Proyecta tu asistencia y libera solidariamente",
+    roles: ["executive"],
   },
   {
     href: "/status",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-6 h-6"
-        aria-hidden="true"
-      >
-        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
-        <line x1="16" x2="16" y1="2" y2="6"/>
-        <line x1="8" x2="8" y1="2" y2="6"/>
-        <line x1="3" x2="21" y1="10" y2="10"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6" aria-hidden="true">
+        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>
       </svg>
     ),
     title: "Mi Estado",
     description: "Marca si vas a la oficina, site o home office",
+    roles: ["executive","professional","guest","client","admin"],
   },
   {
     href: "/incidentes",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-6 h-6"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6" aria-hidden="true">
         <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-        <path d="M12 9v4"/>
-        <path d="M12 17h.01"/>
+        <path d="M12 9v4"/><path d="M12 17h.01"/>
       </svg>
     ),
     title: "Directo a Office Manager",
     description: "Reporta incidentes de limpieza o mantenimiento",
+    roles: ["executive","professional","guest","client","admin"],
   },
 ];
 
@@ -97,21 +87,10 @@ const STATUS_DISPLAY: Record<StatusKey, { label: string; icon: React.ReactNode; 
     label: "En oficina",
     color: "text-green-600",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-4 h-4"
-        aria-hidden="true"
-      >
-        <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/>
-        <path d="M9 22v-4h6v4"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
+        <rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/>
         <path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/>
-        <path d="M12 10h.01"/><path d="M12 14h.01"/>
-        <path d="M16 10h.01"/><path d="M16 14h.01"/>
+        <path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/>
         <path d="M8 10h.01"/><path d="M8 14h.01"/>
       </svg>
     ),
@@ -120,16 +99,7 @@ const STATUS_DISPLAY: Record<StatusKey, { label: string; icon: React.ReactNode; 
     label: "En site",
     color: "text-purple-600",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-4 h-4"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
         <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>
         <path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/>
       </svg>
@@ -139,16 +109,7 @@ const STATUS_DISPLAY: Record<StatusKey, { label: string; icon: React.ReactNode; 
     label: "Home Office",
     color: "text-blue-600",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-4 h-4"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
         <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
@@ -158,18 +119,8 @@ const STATUS_DISPLAY: Record<StatusKey, { label: string; icon: React.ReactNode; 
     label: "Vacaciones",
     color: "text-orange-500",
     icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="w-4 h-4"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="4"/>
-        <path d="M12 2v2"/><path d="M12 20v2"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/>
         <path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>
         <path d="M2 12h2"/><path d="M20 12h2"/>
         <path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
@@ -199,27 +150,60 @@ export default async function DashboardPage() {
     { data: deskReservation },
     { data: parkingReservation },
     { data: myStatus },
+    { data: riffsData },
   ] = await Promise.all([
-    admin.from("profiles").select("full_name, area").eq("id", user!.id).single(),
+    admin.from("profiles").select("full_name, area, role").eq("id", user!.id).single(),
     admin.from("desk_reservations").select("*, desks(code, area)").eq("user_id", user!.id).eq("date", today).eq("status", "confirmed").maybeSingle(),
     admin.from("parking_reservations").select("*, parking_spots(spot_number, level)").eq("user_id", user!.id).eq("date", today).eq("status", "confirmed").maybeSingle(),
     admin.from("user_day_status").select("status").eq("user_id", user!.id).eq("date", today).maybeSingle(),
+    admin.from("riffs_log").select("points").eq("user_id", user!.id),
   ]);
 
   const statusKey = myStatus?.status as StatusKey | undefined;
   const statusDisplay = statusKey ? STATUS_DISPLAY[statusKey] : null;
 
+  const role = (profile?.role ?? "professional") as UserRole;
+  const totalRiffs = (riffsData ?? []).reduce((sum: number, r: { points: number }) => sum + r.points, 0);
+  const riffsInfo = getRiffsLevel(totalRiffs);
+
+  const visibleModules = MODULES.filter((m) => m.roles.includes(role));
+
   return (
     <div className="px-4 py-5">
-      {/* Greeting */}
-      <div className="mb-6">
-        <h1 className="text-[1.2rem] font-bold text-dhl-dark">
-          ¡Hola{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! ¿Listo para hoy?
-        </h1>
-        <p className="text-dhl-gray text-sm mt-0.5">
-          {getDayName(new Date())}
-        </p>
+      {/* Greeting + Role badge */}
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[1.2rem] font-bold text-dhl-dark">
+            ¡Hola{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}! ¿Listo para hoy?
+          </h1>
+          <p className="text-dhl-gray text-sm mt-0.5">{getDayName(new Date())}</p>
+        </div>
+        <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 mt-0.5 ${ROLE_COLOR[role] ?? ROLE_COLOR.client}`}>
+          {ROLE_LABEL[role] ?? "Colaborador"}
+        </span>
       </div>
+
+      {/* Riffs card */}
+      <Link href="/profile">
+        <div className="bg-dhl-dark rounded-2xl px-4 py-3.5 mb-5 flex items-center justify-between hover:opacity-90 transition-opacity">
+          <div>
+            <p className="text-dhl-yellow text-xs font-bold uppercase tracking-wide">Mis Riffs</p>
+            <p className="text-white text-xl font-black leading-tight">{totalRiffs.toLocaleString("es-CL")}</p>
+            <p className="text-white/60 text-xs mt-0.5">{riffsInfo.level}</p>
+          </div>
+          <div className="text-right">
+            <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden mb-1">
+              <div
+                className="h-full bg-dhl-yellow rounded-full transition-all"
+                style={{ width: `${riffsInfo.progress}%` }}
+              />
+            </div>
+            <p className="text-white/50 text-[10px]">
+              {riffsInfo.level !== "Rock Legend" ? `${riffsInfo.next.toLocaleString("es-CL")} para siguiente nivel` : "Nivel máximo"}
+            </p>
+          </div>
+        </div>
+      </Link>
 
       {/* Today's Summary Card */}
       <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4 mb-6">
@@ -239,9 +223,7 @@ export default async function DashboardPage() {
             )}
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-gray flex-shrink-0" aria-hidden="true">
-                <rect width="20" height="14" x="2" y="3" rx="2"/>
-                <line x1="8" x2="16" y1="21" y2="21"/>
-                <line x1="12" x2="12" y1="17" y2="21"/>
+                <rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>
               </svg>
               <span className="text-sm text-dhl-gray">Puesto</span>
             </div>
@@ -266,9 +248,7 @@ export default async function DashboardPage() {
             )}
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-gray flex-shrink-0" aria-hidden="true">
-                <path d="M19 17H5v-6l2.5-6H16.5L19 11v6Z"/>
-                <circle cx="7.5" cy="17.5" r="1.5"/>
-                <circle cx="16.5" cy="17.5" r="1.5"/>
+                <path d="M19 17H5v-6l2.5-6H16.5L19 11v6Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
               </svg>
               <span className="text-sm text-dhl-gray">Parking</span>
             </div>
@@ -293,8 +273,7 @@ export default async function DashboardPage() {
             )}
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-gray flex-shrink-0" aria-hidden="true">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                <circle cx="12" cy="10" r="3"/>
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
               </svg>
               <span className="text-sm text-dhl-gray">Mi estado</span>
             </div>
@@ -312,7 +291,7 @@ export default async function DashboardPage() {
 
       {/* Module Cards */}
       <div className="space-y-3">
-        {MODULES.map((mod) => (
+        {visibleModules.map((mod) => (
           <Link key={mod.href} href={mod.href}>
             <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4 flex items-center gap-4 hover:shadow-md transition-shadow active:scale-[0.99]">
               <div className="w-11 h-11 rounded-xl bg-dhl-yellow/20 flex items-center justify-center text-dhl-red flex-shrink-0">
@@ -320,20 +299,9 @@ export default async function DashboardPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-dhl-dark text-sm">{mod.title}</p>
-                <p className="text-dhl-gray text-xs mt-0.5 leading-tight">
-                  {mod.description}
-                </p>
+                <p className="text-dhl-gray text-xs mt-0.5 leading-tight">{mod.description}</p>
               </div>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-5 h-5 text-dhl-mid-gray flex-shrink-0"
-                aria-hidden="true"
-              >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-dhl-mid-gray flex-shrink-0" aria-hidden="true">
                 <path d="m9 18 6-6-6-6"/>
               </svg>
             </div>

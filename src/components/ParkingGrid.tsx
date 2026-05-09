@@ -15,14 +15,14 @@ interface Props {
 }
 
 const CUTOFF_HOUR = 9;
-const CUTOFF_MIN = 30;
+const CUTOFF_MIN  = 1; // 9:01 AM
 
 function isPastCutoff(): boolean {
   const now = new Date();
   return now.getHours() * 60 + now.getMinutes() >= CUTOFF_HOUR * 60 + CUTOFF_MIN;
 }
 
-type SpotState = "mine" | "available" | "pending" | "assigned" | "occupied" | "disabled";
+type SpotState = "mine" | "available" | "pending" | "assigned" | "high_freq" | "occupied" | "disabled";
 
 function getSpotState(
   spot: ParkingSpotWithReservation,
@@ -32,6 +32,7 @@ function getSpotState(
   if (!spot.is_active || spot.spot_status === "blocked") return "disabled";
   if (spot.reservation?.user_id === myId) return "mine";
   if (spot.reservation?.status === "confirmed") return "occupied";
+  if (spot.spot_status === "high_frequency") return "high_freq";
   if (spot.spot_status === "fixed") return "assigned";
   if (spot.spot_status === "director_reserved") {
     if (isMonday && !isPastCutoff()) return "pending";
@@ -41,22 +42,24 @@ function getSpotState(
 }
 
 const STATE_COLORS: Record<SpotState, string> = {
-  mine:     "bg-blue-500 border-blue-700 text-white",
-  available:"bg-green-500 border-green-700 text-white",
-  pending:  "bg-amber-400 border-amber-600 text-amber-900",
-  assigned: "bg-red-400 border-red-600 text-white",
-  occupied: "bg-gray-400 border-gray-500 text-white",
-  disabled: "bg-gray-200 border-gray-300 text-gray-400",
+  mine:      "bg-blue-500 border-blue-700 text-white",
+  available: "bg-green-500 border-green-700 text-white",
+  pending:   "bg-amber-400 border-amber-600 text-amber-900",
+  assigned:  "bg-red-400 border-red-600 text-white",
+  high_freq: "bg-orange-400 border-orange-600 text-white",
+  occupied:  "bg-gray-400 border-gray-500 text-white",
+  disabled:  "bg-gray-200 border-gray-300 text-gray-400",
 };
 
 function getSpotLabel(spot: ParkingSpotWithReservation, state: SpotState): string {
   switch (state) {
-    case "mine":     return "Mi lugar";
-    case "available":return "Libre";
-    case "pending":  return spot.director_name?.split(" ").slice(-1)[0] ?? "Dir.";
-    case "assigned": return spot.assigned_user_name?.split(",")[0] ?? "Asignado";
-    case "occupied": return "Ocupado";
-    case "disabled": return "";
+    case "mine":      return "Mi lugar";
+    case "available": return "Libre";
+    case "pending":   return spot.director_name?.split(" ").slice(-1)[0] ?? "Dir.";
+    case "assigned":  return spot.assigned_user_name?.split(",")[0] ?? "Asignado";
+    case "high_freq": return spot.assigned_user_name?.split(",")[0] ?? "Alta Freq.";
+    case "occupied":  return "Ocupado";
+    case "disabled":  return "";
   }
 }
 
@@ -232,6 +235,13 @@ export default function ParkingGrid({
               <p className="text-xs text-dhl-gray mt-1">Contacta al Office Manager si necesitas acceder a este espacio.</p>
             </div>
           )}
+          {state === "high_freq" && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4">
+              <p className="text-sm font-semibold text-orange-700">Espacio alta frecuencia</p>
+              <p className="text-xs text-orange-600 mt-0.5">{selected.assigned_user_name}</p>
+              <p className="text-xs text-dhl-gray mt-1">Reservado para colaboradores que asisten más de 4 días a la semana. Check-in obligatorio antes de las 9:01 AM.</p>
+            </div>
+          )}
 
           {state === "pending" && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
@@ -239,11 +249,11 @@ export default function ParkingGrid({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
                   <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                 </svg>
-                Reservado hasta las 9:30 AM
+                Reservado hasta las 9:01 AM
               </p>
               <p className="text-xs text-amber-700 mt-1">
                 Asignado a <span className="font-semibold">{selected.director_name}</span> los lunes.
-                Si no llega antes de las 9:30, quedará libre.
+                Si no llega antes de las 9:01, quedará libre.
               </p>
             </div>
           )}
@@ -252,7 +262,7 @@ export default function ParkingGrid({
             <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
               <p className="text-sm font-semibold text-green-700">Espacio liberado</p>
               <p className="text-xs text-green-600 mt-0.5">
-                El director no llegó antes de las 9:30 AM. Disponible para reservar.
+                El director no llegó antes de las 9:01 AM. Disponible para reservar.
               </p>
             </div>
           )}
@@ -304,7 +314,7 @@ export default function ParkingGrid({
 
             {state === "pending" && (
               <p className="text-center text-sm text-amber-600 font-medium">
-                Disponible a partir de las 9:30 AM si el director no llega
+                Disponible a partir de las 9:01 AM si el director no llega
               </p>
             )}
           </div>
@@ -342,22 +352,44 @@ export default function ParkingGrid({
         <div className="flex justify-between mt-1">
           <span className="text-xs text-dhl-gray">{availableCount} libres</span>
           {isMonday && !past930 && (
-            <span className="text-xs text-amber-600 font-medium">Lunes — Dir. liberan a las 9:30</span>
+            <span className="text-xs text-amber-600 font-medium">Lunes — Dir. liberan a las 9:01</span>
           )}
         </div>
       </div>
 
       {isPlanB && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-3 flex items-start gap-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-            <path d="M12 9v4"/><path d="M12 17h.01"/>
-          </svg>
-          <div>
-            <p className="text-sm font-bold text-red-700">Estacionamiento lleno — Plan B</p>
-            <p className="text-xs text-red-600 mt-0.5">
-              Usa estacionamientos externos (ParkUp). Guarda boleta para reembolso con RRHH.
-            </p>
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-4 mb-3">
+          <div className="flex items-start gap-3 mb-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <path d="M12 9v4"/><path d="M12 17h.01"/>
+            </svg>
+            <div>
+              <p className="text-sm font-bold text-red-700">Estacionamiento completo — Plan B</p>
+              <p className="text-xs text-red-600 mt-0.5">
+                Los 20 espacios gestionados están ocupados hoy.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="bg-white border border-red-200 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true">
+                <path d="M19 17H5v-6l2.5-6H16.5L19 11v6Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
+              </svg>
+              <div>
+                <p className="text-xs font-semibold text-dhl-dark">ParkUp — Edificio adyacente</p>
+                <p className="text-xs text-dhl-gray">Guarda boleta para reembolso con RRHH</p>
+              </div>
+            </div>
+            <div className="bg-white border border-red-200 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true">
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              <div>
+                <p className="text-xs font-semibold text-dhl-dark">Estacionamiento Público</p>
+                <p className="text-xs text-dhl-gray">Av. del Parque 4023</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -492,12 +524,12 @@ export default function ParkingGrid({
       {/* Legend */}
       <div className="mt-3 grid grid-cols-2 gap-2">
         {[
-          { color: "bg-green-500 border-green-700", label: "Libre / Disponible" },
-          { color: "bg-amber-400 border-amber-600", label: "Director (lib. 9:30 lunes)" },
-          { color: "bg-red-400 border-red-600",     label: "Asignado permanente" },
-          { color: "bg-blue-500 border-blue-700",   label: "Mi reserva" },
-          { color: "bg-gray-400 border-gray-500",   label: "Ocupado" },
-          { color: "bg-gray-200 border-gray-300",   label: "No disponible" },
+          { color: "bg-green-500 border-green-700",  label: "Libre / Disponible" },
+          { color: "bg-amber-400 border-amber-600",  label: "Director (lib. 9:01 lunes)" },
+          { color: "bg-orange-400 border-orange-600",label: "Alta freq. (>4 días/sem)" },
+          { color: "bg-red-400 border-red-600",      label: "Asignado permanente" },
+          { color: "bg-blue-500 border-blue-700",    label: "Mi reserva" },
+          { color: "bg-gray-400 border-gray-500",    label: "Ocupado" },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
             <div className={`w-4 h-4 rounded border-2 flex-shrink-0 ${item.color}`} />

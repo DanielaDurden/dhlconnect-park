@@ -15,7 +15,7 @@ export default async function DesksPage() {
   // Get user profile
   const { data: profile } = await admin
     .from("profiles")
-    .select("id, area, full_name")
+    .select("id, area, full_name, role")
     .eq("id", user!.id)
     .single();
 
@@ -123,7 +123,7 @@ export default async function DesksPage() {
               {desks?.find((d) => d.id === myReservation.desk_id)?.code}
             </p>
             <p className="text-xs text-green-600">
-              Check-in antes de las 10:00 AM para mantener tu reserva
+              Check-in antes de las 9:01 AM para mantener tu reserva
             </p>
           </div>
         </div>
@@ -148,6 +148,7 @@ export default async function DesksPage() {
         myProfile={profile!}
         today={today}
         myReservationId={myReservation?.id ?? null}
+        myRole={profile?.role as import("@/types").UserRole}
       />
     </div>
   );

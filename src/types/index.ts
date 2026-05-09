@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "client";
+export type UserRole = "admin" | "executive" | "professional" | "guest" | "client";
 export type UserArea =
   | "FIN"
   | "OE"
@@ -21,7 +21,8 @@ export type ParkingSpotStatus =
   | "available"
   | "fixed"
   | "blocked"
-  | "director_reserved";
+  | "director_reserved"
+  | "high_frequency";
 export type ReservationStatus = "confirmed" | "cancelled";
 export type IncidentCategory =
   | "cleaning"
@@ -29,6 +30,38 @@ export type IncidentCategory =
   | "maintenance"
   | "other";
 export type IncidentStatus = "open" | "in_progress" | "resolved";
+
+// Riffs gamification
+export type RiffsAction =
+  | "solidarity_release"    // +50 — executive/professional libera solidariamente
+  | "checkin_carpooling"    // +30 — professional marca check-in con carpooling
+  | "early_checkout"        // +20 — professional libera espacio antes de tiempo
+  | "checkin_ontime";       // +10 — check-in a tiempo (base)
+
+export type RiffsLevel = "Opening Act" | "Rising Star" | "Headliner" | "Rock Legend";
+
+export interface RiffsLog {
+  id: string;
+  user_id: string;
+  action: RiffsAction;
+  points: number;
+  ref_id?: string | null;
+  created_at: string;
+}
+
+export function getRiffsLevel(total: number): { level: RiffsLevel; next: number; progress: number } {
+  if (total >= 8000) return { level: "Rock Legend", next: 8000, progress: 100 };
+  if (total >= 3000) return { level: "Headliner",  next: 8000, progress: Math.round((total / 8000) * 100) };
+  if (total >= 1000) return { level: "Rising Star", next: 3000, progress: Math.round((total / 3000) * 100) };
+  return { level: "Opening Act", next: 1000, progress: Math.round((total / 1000) * 100) };
+}
+
+export const RIFFS_POINTS: Record<RiffsAction, number> = {
+  solidarity_release:  50,
+  checkin_carpooling:  30,
+  early_checkout:      20,
+  checkin_ontime:      10,
+};
 
 export interface Profile {
   id: string;
@@ -40,6 +73,7 @@ export interface Profile {
   avatar_url?: string;
   policy_accepted_at: string | null;
   push_subscription?: object | null;
+  riffs_total?: number;
   created_at: string;
 }
 
@@ -76,6 +110,7 @@ export interface DeskReservation {
   date: string;
   checked_in: boolean;
   check_in_time?: string | null;
+  carpooling?: boolean;
   status: ReservationStatus;
   created_at: string;
   profile?: Pick<Profile, "full_name" | "area">;
@@ -116,6 +151,7 @@ export interface ParkingReservation {
   spot_id: string;
   user_id: string;
   date: string;
+  carpooling?: boolean;
   status: ReservationStatus;
   created_at: string;
   profile?: Pick<Profile, "full_name">;
@@ -139,5 +175,15 @@ export interface OwnerRequest {
   desk_id: string;
   date: string;
   status: "pending" | "approved" | "denied";
+  created_at: string;
+}
+
+export interface WeeklyPlan {
+  id: string;
+  user_id: string;
+  week_start: string; // YYYY-MM-DD Monday
+  day_of_week: number; // 1–5
+  planned_status: DayStatus;
+  solidarity_released: boolean;
   created_at: string;
 }

@@ -2,18 +2,19 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { DeskWithStatus, Profile } from "@/types";
+import type { DeskWithStatus, Profile, UserRole } from "@/types";
 
 interface Props {
   desks: DeskWithStatus[];
   myProfile: Pick<Profile, "id" | "area" | "full_name">;
   today: string;
   myReservationId: string | null;
+  myRole?: UserRole;
 }
 
 const DISABLED_CODES = new Set(["GG01"]);
 const CUTOFF_HOUR = 9;
-const CUTOFF_MIN = 30;
+const CUTOFF_MIN  = 1; // 9:01 AM
 
 function isPastCutoff(): boolean {
   const now = new Date();
@@ -34,7 +35,6 @@ function getDeskState(desk: DeskWithStatus, myId: string): DeskState {
   return isPastCutoff() ? "available" : "pending";
 }
 
-// Visual config per state
 const STATE_STYLE: Record<DeskState, { bg: string; label: string; icon: string }> = {
   cowork:   { bg: "bg-dhl-yellow border-yellow-400 text-dhl-dark", label: "Co-Work", icon: "★" },
   available:{ bg: "bg-green-500 border-green-700 text-white",      label: "Libre",   icon: "✓" },
@@ -45,25 +45,44 @@ const STATE_STYLE: Record<DeskState, { bg: string; label: string; icon: string }
   disabled: { bg: "bg-gray-200 border-gray-300 text-gray-400",     label: "",        icon: "" },
 };
 
-export default function DeskMap({ desks, myProfile, today, myReservationId }: Props) {
+export default function DeskMap({ desks, myProfile, today, myReservationId, myRole = "professional" }: Props) {
   const [selected, setSelected] = useState<DeskWithStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [carpooling, setCarpooling] = useState(false);
   const router = useRouter();
 
   const deskMap = Object.fromEntries(desks.map((d) => [d.code, d]));
   const hasReservation = !!myReservationId;
-  const past930 = isPastCutoff();
+  const past901 = isPastCutoff();
+  const isGuest = myRole === "guest";
+  const isExecutive = myRole === "executive";
 
-  // Counts for summary banner
   const coworkAvail  = desks.filter((d) => getDeskState(d, myProfile.id) === "cowork").length;
   const released     = desks.filter((d) => getDeskState(d, myProfile.id) === "available" && d.assigned_user_id).length;
   const pendingCount = desks.filter((d) => getDeskState(d, myProfile.id) === "pending").length;
   const totalFree    = desks.filter((d) => ["cowork","available"].includes(getDeskState(d, myProfile.id))).length;
+  const isWorstCase  = !hasReservation && totalFree === 0 && past901;
 
   function showToast(msg: string) {
     setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  async function awardRiffs(action: string, ref_id?: string) {
+    await fetch("/api/riffs/award", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ref_id }),
+    });
+  }
+
+  async function logWorstCase() {
+    await fetch("/api/worst-case", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "desks_full" }),
+    });
   }
 
   async function handleReserve(desk: DeskWithStatus) {
@@ -73,8 +92,13 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ desk_id: desk.id, date: today }),
     });
-    if (!res.ok) showToast("Error al reservar. Intenta de nuevo.");
-    else { showToast(`Reservaste el puesto ${desk.code}`); setSelected(null); router.refresh(); }
+    if (!res.ok) {
+      showToast("Error al reservar. Intenta de nuevo.");
+    } else {
+      showToast(`Reservaste el puesto ${desk.code}`);
+      setSelected(null);
+      router.refresh();
+    }
     setLoading(false);
   }
 
@@ -83,10 +107,19 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
     const res = await fetch("/api/desks/reserve", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ desk_id: desk.id, date: today }),
+      body: JSON.stringify({ desk_id: desk.id, date: today, carpooling }),
     });
-    if (!res.ok) showToast("Error al marcar llegada.");
-    else { showToast("Llegada marcada. Tu puesto está asegurado."); setSelected(null); router.refresh(); }
+    if (!res.ok) {
+      showToast("Error al marcar llegada.");
+    } else {
+      const riffsAction = carpooling ? "checkin_carpooling" : "checkin_ontime";
+      await awardRiffs(riffsAction, desk.id);
+      const riffsMsg = carpooling ? " +30 Riffs por carpooling" : " +10 Riffs";
+      showToast(`Llegada marcada.${riffsMsg}`);
+      setSelected(null);
+      setCarpooling(false);
+      router.refresh();
+    }
     setLoading(false);
   }
 
@@ -104,6 +137,25 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
     setLoading(false);
   }
 
+  async function handleEarlyCheckout(solidarity = false) {
+    if (!myReservationId) return;
+    setLoading(true);
+    const res = await fetch("/api/desks/release", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reservation_id: myReservationId, solidarity }),
+    });
+    if (res.ok) {
+      const pts = solidarity ? 50 : 20;
+      showToast(`Espacio liberado. +${pts} Riffs`);
+      setSelected(null);
+      router.refresh();
+    } else {
+      showToast("Error al liberar. Intenta de nuevo.");
+    }
+    setLoading(false);
+  }
+
   // ── Floor plan sub-components ──────────────────────────────────
 
   function FloorDesk({ code, x, y }: { code: string; x: number; y: number }) {
@@ -113,7 +165,6 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
         <div
           className="absolute w-[52px] h-[44px] rounded-lg border-2 border-dashed border-gray-300 bg-gray-100 flex items-center justify-center"
           style={{ left: x, top: y }}
-          title={`${code} — sin datos`}
         >
           <span className="text-[9px] font-bold text-gray-400">{code}</span>
         </div>
@@ -181,7 +232,13 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
     if (!selected) return null;
     const state = getDeskState(selected, myProfile.id);
     const style = STATE_STYLE[state];
-    const canBook = (state === "cowork" || state === "available") && !hasReservation;
+
+    // Guests can only book cowork
+    const canBook = isGuest
+      ? state === "cowork" && !hasReservation
+      : (state === "cowork" || state === "available") && !hasReservation;
+
+    const isMyCheckedIn = state === "checkedin" || selected.reservation?.user_id === myProfile.id;
 
     return (
       <div
@@ -192,7 +249,6 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
           className="bg-white rounded-t-2xl w-full max-w-lg shadow-xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Color strip header */}
           <div className={`px-5 py-4 flex items-center justify-between ${style.bg}`}>
             <div>
               <p className="text-xs font-semibold opacity-70 uppercase tracking-wide">
@@ -202,11 +258,8 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
               <h3 className="text-xl font-bold mt-0.5">Puesto {selected.code}</h3>
               <p className="text-sm font-semibold mt-0.5">{style.label}</p>
             </div>
-            <button
-              onClick={() => setSelected(null)}
-              aria-label="Cerrar"
-              className="w-9 h-9 rounded-full bg-black/10 flex items-center justify-center flex-shrink-0"
-            >
+            <button onClick={() => setSelected(null)} aria-label="Cerrar"
+              className="w-9 h-9 rounded-full bg-black/10 flex items-center justify-center flex-shrink-0">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -214,62 +267,92 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
           </div>
 
           <div className="px-5 py-4 space-y-3">
-            {/* Context info */}
             {state === "mine" && (
               <p className="text-sm text-dhl-gray">
-                Este puesto está asignado a ti. Marca tu llegada antes de las 9:30 AM para asegurarlo. Si no llegas, quedará disponible para otros.
+                Tu puesto asignado. Marca tu llegada antes de las 9:01 AM para asegurarlo.
               </p>
             )}
             {state === "checkedin" && (
               <p className="text-sm text-green-700 font-medium">Tu puesto está asegurado para hoy.</p>
             )}
             {state === "cowork" && (
-              <p className="text-sm text-dhl-gray">Puesto sin dueño asignado. Disponible para cualquier colaborador, todos los días.</p>
+              <p className="text-sm text-dhl-gray">Co-Work sin dueño asignado. Disponible todos los días.</p>
             )}
             {state === "available" && selected.assigned_user_id && (
               <p className="text-sm text-dhl-gray">
-                Asignado a <span className="font-semibold">{selected.assigned_profile?.full_name ?? "un colaborador"}</span>, quien no llegó antes de las 9:30 AM. Disponible para reservar.
+                Asignado a <span className="font-semibold">{selected.assigned_profile?.full_name ?? "un colaborador"}</span>, liberado automáticamente a las 9:01 AM.
               </p>
             )}
             {state === "available" && !selected.assigned_user_id && (
-              <p className="text-sm text-dhl-gray">Puesto compartido disponible para reservar hoy.</p>
+              <p className="text-sm text-dhl-gray">Puesto compartido disponible para hoy.</p>
             )}
             {state === "pending" && (
               <p className="text-sm text-dhl-gray">
-                Asignado a <span className="font-semibold">{selected.assigned_profile?.full_name ?? "un colaborador"}</span>. Si no hace check-in antes de las <span className="font-semibold">9:30 AM</span>, el puesto quedará libre automáticamente.
+                Asignado a <span className="font-semibold">{selected.assigned_profile?.full_name ?? "un colaborador"}</span>. Si no hace check-in antes de las <span className="font-semibold">9:01 AM</span>, quedará libre.
               </p>
             )}
             {state === "occupied" && selected.reservation?.user_id !== myProfile.id && (
               <p className="text-sm text-dhl-gray">Este puesto ya está ocupado hoy.</p>
             )}
 
+            {/* Guest restriction banner */}
+            {isGuest && state !== "cowork" && state !== "occupied" && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+                <p className="text-sm text-blue-700 font-medium">Solo puestos Co-Work</p>
+                <p className="text-xs text-blue-600 mt-0.5">Como visita, solo puedes reservar puestos Co-Work (amarillos).</p>
+              </div>
+            )}
+
+            {/* Carpooling toggle — shown on "mine" state for professionals */}
+            {state === "mine" && !isGuest && (
+              <label className="flex items-center gap-3 bg-dhl-yellow/10 border border-dhl-yellow rounded-xl px-4 py-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={carpooling}
+                  onChange={(e) => setCarpooling(e.target.checked)}
+                  className="w-4 h-4 accent-dhl-red"
+                />
+                <div>
+                  <p className="text-sm font-semibold text-dhl-dark">Vine en Carpooling</p>
+                  <p className="text-xs text-dhl-gray">+30 Riffs por compartir el viaje</p>
+                </div>
+              </label>
+            )}
+
             {/* Actions */}
             {state === "mine" && (
-              <button
-                onClick={() => handleCheckin(selected)}
-                disabled={loading}
-                className="w-full bg-blue-500 text-white font-bold py-3.5 rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-60"
-              >
-                {loading ? "Marcando llegada..." : "Marcar mi llegada"}
+              <button onClick={() => handleCheckin(selected)} disabled={loading}
+                className="w-full bg-blue-500 text-white font-bold py-3.5 rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-60">
+                {loading ? "Marcando llegada..." : carpooling ? "Marcar llegada + Carpooling" : "Marcar mi llegada"}
               </button>
             )}
 
-            {(state === "checkedin" || selected.reservation?.user_id === myProfile.id) && (
-              <button
-                onClick={handleCancel}
-                disabled={loading}
-                className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60"
-              >
-                {loading ? "Cancelando..." : "Liberar este puesto"}
+            {/* Professional: Early checkout */}
+            {isMyCheckedIn && !isExecutive && (
+              <button onClick={() => handleEarlyCheckout(false)} disabled={loading}
+                className="w-full bg-orange-100 text-orange-700 font-semibold py-3 rounded-xl hover:bg-orange-200 transition-colors disabled:opacity-60">
+                {loading ? "Liberando..." : "Liberar espacio ahora (+20 Riffs)"}
+              </button>
+            )}
+
+            {/* Executive: Solidarity release */}
+            {isMyCheckedIn && isExecutive && (
+              <button onClick={() => handleEarlyCheckout(true)} disabled={loading}
+                className="w-full bg-dhl-yellow text-dhl-dark font-bold py-3.5 rounded-xl hover:bg-yellow-400 transition-colors disabled:opacity-60">
+                {loading ? "Liberando..." : "Liberar solidariamente (+50 Riffs)"}
+              </button>
+            )}
+
+            {isMyCheckedIn && (
+              <button onClick={handleCancel} disabled={loading}
+                className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60">
+                {loading ? "Cancelando..." : "Cancelar reserva"}
               </button>
             )}
 
             {canBook && (
-              <button
-                onClick={() => handleReserve(selected)}
-                disabled={loading}
-                className="w-full bg-dhl-red text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60"
-              >
+              <button onClick={() => handleReserve(selected)} disabled={loading}
+                className="w-full bg-dhl-red text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60">
                 {loading ? "Reservando..." : "Reservar este puesto"}
               </button>
             )}
@@ -282,7 +365,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
 
             {state === "pending" && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
-                <p className="text-sm font-semibold text-amber-700">Vuelve después de las 9:30 AM</p>
+                <p className="text-sm font-semibold text-amber-700">Vuelve después de las 9:01 AM</p>
                 <p className="text-xs text-amber-600 mt-0.5">Si el dueño no llega, podrás reservar este puesto.</p>
               </div>
             )}
@@ -296,7 +379,6 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
 
   return (
     <div className="relative space-y-3">
-      {/* Toast */}
       {toast && (
         <div className="fixed top-16 left-0 right-0 mx-4 z-50 pointer-events-none">
           <div className="bg-dhl-dark text-white text-sm rounded-xl px-4 py-3 shadow-xl max-w-lg mx-auto text-center">
@@ -305,7 +387,35 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
         </div>
       )}
 
-      {/* Summary banner — what can I do today */}
+      {/* Guest banner */}
+      {isGuest && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-blue-700">Modo Explorador</p>
+            <p className="text-xs text-blue-600 mt-0.5">Ingresa a la app para buscar puestos Co-Work disponibles después de las 9:01 AM.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Worst Case — Oficina llena */}
+      {isWorstCase && (
+        <div
+          className="bg-gradient-to-br from-dhl-yellow/20 to-dhl-yellow/5 border border-dhl-yellow rounded-2xl px-5 py-5 text-center"
+          onLoad={() => logWorstCase()}
+        >
+          <p className="text-2xl font-black text-dhl-dark mb-1">🚀</p>
+          <p className="text-sm font-bold text-dhl-dark">¡Oficina a máxima capacidad!</p>
+          <p className="text-xs text-dhl-gray mt-1.5 leading-relaxed">
+            Hoy la base en Ciudad Empresarial está llena.<br/>
+            Aprovecha para conectar con la operación visitando un Site o trabaja desde otro lugar inspirador.
+          </p>
+        </div>
+      )}
+
+      {/* Summary banner */}
       <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4">
         <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-3">Disponibilidad ahora</p>
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -315,7 +425,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
           </div>
           <div className="rounded-xl bg-green-50 border border-green-200 px-2 py-2.5">
             <p className="text-lg font-bold text-green-700">{released}</p>
-            <p className="text-[10px] font-semibold text-green-600 leading-tight">Liberados<br/>{past930 ? "desde 9:30" : "a las 9:30"}</p>
+            <p className="text-[10px] font-semibold text-green-600 leading-tight">Liberados<br/>{past901 ? "desde 9:01" : "a las 9:01"}</p>
           </div>
           <div className="rounded-xl bg-amber-50 border border-amber-200 px-2 py-2.5">
             <p className="text-lg font-bold text-amber-700">{pendingCount}</p>
@@ -324,7 +434,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
         </div>
         {!hasReservation && totalFree > 0 && (
           <p className="text-xs text-green-700 font-semibold text-center mt-3 bg-green-50 rounded-lg py-2">
-            {totalFree} puesto{totalFree > 1 ? "s" : ""} disponible{totalFree > 1 ? "s" : ""} para ti ahora — toca uno en el plano para reservar
+            {totalFree} puesto{totalFree > 1 ? "s" : ""} disponible{totalFree > 1 ? "s" : ""} — toca uno para reservar
           </p>
         )}
         {hasReservation && (
@@ -334,14 +444,14 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
         )}
       </div>
 
-      {/* Legend — BEFORE the map */}
+      {/* Legend */}
       <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray px-4 py-3">
         <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-2">Referencias</p>
         <div className="grid grid-cols-2 gap-y-2 gap-x-4">
           {[
             { bg: "bg-dhl-yellow border-yellow-400", icon: "★", label: "Co-Work — siempre libre" },
             { bg: "bg-green-500 border-green-700",   icon: "✓", label: "Libre / disponible ahora" },
-            { bg: "bg-amber-400 border-amber-600",   icon: "⏱", label: "Pendiente (antes 9:30)" },
+            { bg: "bg-amber-400 border-amber-600",   icon: "⏱", label: "Pendiente (antes 9:01)" },
             { bg: "bg-blue-500 border-blue-700",     icon: "↓", label: "Mi puesto asignado" },
             { bg: "bg-gray-400 border-gray-500",     icon: "✕", label: "Ocupado hoy" },
             { bg: "bg-gray-200 border-gray-300",     icon: "",  label: "No disponible" },
@@ -356,14 +466,14 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
         </div>
       </div>
 
-      {/* Cutoff banner if before 9:30 */}
-      {!past930 && (
+      {/* Cutoff banner */}
+      {!past901 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2.5">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-600 flex-shrink-0" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
           <p className="text-xs text-amber-700">
-            Los puestos <span className="font-semibold">⏱ Pendiente</span> se liberan automáticamente a las <span className="font-semibold">9:30 AM</span> si el dueño no hace check-in.
+            Los puestos <span className="font-semibold">⏱ Pendiente</span> se liberan automáticamente a las <span className="font-semibold">9:01 AM</span>.
           </p>
         </div>
       )}
@@ -378,7 +488,6 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
         <div className="overflow-x-auto p-3">
           <div className="relative rounded-xl bg-gray-50" style={{ width: 548, height: 636 }}>
 
-            {/* Zone labels */}
             <span className="absolute text-[8px] font-bold text-dhl-gray/50 uppercase tracking-widest" style={{ left: 72, top: 12 }}>Zona A</span>
             <span className="absolute text-[8px] font-bold text-dhl-gray/50 uppercase tracking-widest" style={{ left: 72, top: 92 }}>Zona B</span>
             <span className="absolute text-[8px] font-bold text-dhl-gray/50 uppercase tracking-widest" style={{ left: 248, top: 92 }}>Zona C</span>
@@ -392,7 +501,6 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
             <FloorDesk code="A06" x={362} y={24} />
             <RoomBox label="Oficina OE" x={424} y={24} w={116} h={44} />
 
-            {/* Left column */}
             <RoomBox label="HR"   x={4} y={108} />
             <RoomBox label="FIN"  x={4} y={162} />
             <RoomBox label="BD"   x={4} y={240} />
@@ -402,21 +510,19 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
             <RoomBox label="Ops"  x={4} y={498} muted />
             <RoomBox label="GG"   x={4} y={554} />
 
-            {/* ZONA B — Group 1 */}
+            {/* ZONA B */}
             <GroupBorder x={68} y={104} w={120} h={112} />
             <FloorDesk code="B01" x={72}  y={108} />
             <FloorDesk code="B02" x={130} y={108} />
             <FloorDesk code="B03" x={72}  y={162} />
             <FloorDesk code="B04" x={130} y={162} />
 
-            {/* ZONA B — Group 2 */}
             <GroupBorder x={68} y={236} w={120} h={112} />
             <FloorDesk code="B05" x={72}  y={240} />
             <FloorDesk code="B06" x={130} y={240} />
             <FloorDesk code="B07" x={72}  y={294} />
             <FloorDesk code="B08" x={130} y={294} />
 
-            {/* ZONA B — Group 3 */}
             <GroupBorder x={68} y={368} w={120} h={112} />
             <FloorDesk code="B09" x={72}  y={372} />
             <FloorDesk code="B10" x={130} y={372} />
@@ -431,10 +537,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId }: Pr
             <FloorDesk code="C05" x={306} y={162} />
             <FloorDesk code="C06" x={364} y={162} />
 
-            {/* GG01 disabled */}
             <FloorDesk code="GG01" x={100} y={498} />
-
-            {/* Meeting room */}
             <RoomBox label="Sala de Reunión" x={72} y={560} w={248} h={48} />
           </div>
         </div>
