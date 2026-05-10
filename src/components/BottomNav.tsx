@@ -23,7 +23,7 @@ const BASE_ITEMS = [
         <path d="M20 7H4c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 8H4V9h16v6zM6 10h2v4H6zm4 0h2v4h-2zm4 0h4v4h-4z" />
       </svg>
     ),
-    roles: ["executive","professional","guest","client","admin"],
+    roles: ["professional","guest","client","admin"],
   },
   {
     href: "/parking",
@@ -33,7 +33,7 @@ const BASE_ITEMS = [
         <path d="M13 3H6v18h4v-6h3c3.31 0 6-2.69 6-6s-2.69-6-6-6zm.2 8H10V7h3.2c1.1 0 2 .9 2 2s-.9 2-2 2z" />
       </svg>
     ),
-    roles: ["executive","professional","guest","client","admin"],
+    roles: ["professional","guest","client","admin"],
   },
   {
     href: "/planner",

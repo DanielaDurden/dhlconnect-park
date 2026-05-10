@@ -30,7 +30,13 @@ export default async function PlannerPage() {
     redirect("/home");
   }
 
-  const monday = getMondayOfWeek(new Date());
+  const now = new Date();
+  const todayDay = now.getDay();
+  const isWeekend = todayDay === 0 || todayDay === 6;
+
+  const monday = getMondayOfWeek(now);
+  // On weekends show next week so executives can plan ahead
+  if (isWeekend) monday.setDate(monday.getDate() + 7);
   const weekStart = monday.toISOString().split("T")[0];
 
   const weekDates = Array.from({ length: 5 }, (_, i) => {
@@ -50,8 +56,13 @@ export default async function PlannerPage() {
       <div className="mb-5">
         <h1 className="text-xl font-bold text-dhl-dark">Planificador Semanal</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
-          Proyecta tu semana y libera tu espacio solidariamente
+          {isWeekend ? "Planifica tu próxima semana" : "Proyecta tu semana y libera tu espacio solidariamente"}
         </p>
+        {isWeekend && (
+          <span className="inline-block mt-1.5 text-[10px] font-bold bg-dhl-yellow/30 text-dhl-dark px-2 py-0.5 rounded-full uppercase tracking-wide">
+            Próxima semana
+          </span>
+        )}
       </div>
 
       <div className="bg-dhl-yellow/10 border border-dhl-yellow rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
