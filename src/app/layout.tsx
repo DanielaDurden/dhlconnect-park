@@ -2,13 +2,13 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DHL Connect & Park",
-  description: "Reserva tu puesto y estacionamiento en DHL",
+  title: "DHL Stage",
+  description: "Tu espacio de trabajo en DHL",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "DHL Connect & Park",
+    title: "DHL Stage",
   },
 };
 

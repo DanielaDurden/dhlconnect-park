@@ -1,7 +1,7 @@
 {
-  "name": "DHL Connect & Park",
-  "short_name": "DHL C&P",
-  "description": "Reserva tu puesto y estacionamiento en DHL",
+  "name": "DHL Stage",
+  "short_name": "DHL Stage",
+  "description": "Tu espacio de trabajo en DHL",
   "start_url": "/home",
   "display": "standalone",
   "background_color": "#D40511",
