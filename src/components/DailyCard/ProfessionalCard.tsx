@@ -121,7 +121,7 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
         <p className="text-base text-dhl-gray">Que sea un buen día en la oficina.</p>
         {didCarpooling && (
           <span className="riffs-pop inline-block bg-dhl-yellow/20 text-dhl-dark font-bold px-3 py-1 rounded-full text-sm">
-            + 30 Riffs por carpooling
+            + 30 Riffs · Rockstar Path 🚗
           </span>
         )}
       </div>
@@ -188,7 +188,7 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
           </div>
 
           <div>
-            <p className="text-sm text-dhl-dark font-medium mb-2">¿Hiciste carpooling?</p>
+            <p className="text-sm text-dhl-dark font-medium mb-2">¿Vienes acompañado? 🚗</p>
             <div className="flex gap-2">
               {[true, false].map((val) => (
                 <button

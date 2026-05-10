@@ -1,58 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-type GuestState = "pre_cutoff" | "available" | "full";
+type GuestState = "available" | "full";
 
 interface Props {
   firstName: string;
   availableDesksCount: number;
 }
 
-function deriveState(availableDesksCount: number): GuestState {
-  const now = new Date();
-  const afterCutoff = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() >= 1);
-  if (!afterCutoff) return "pre_cutoff";
-  return availableDesksCount > 0 ? "available" : "full";
-}
-
 export default function GuestCard({ firstName, availableDesksCount }: Props) {
   const router = useRouter();
-  const [state, setState] = useState<GuestState>(() => deriveState(availableDesksCount));
   const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (state !== "pre_cutoff") return;
-    const id = setTimeout(() => {
-      setState(availableDesksCount > 0 ? "available" : "full");
-    }, 3000);
-    return () => clearTimeout(id);
-  }, [state, availableDesksCount]);
+  const state: GuestState = availableDesksCount > 0 ? "available" : "full";
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
   }
 
-  if (state === "pre_cutoff") {
-    return (
-      <div className="text-center space-y-3">
-        <p className="text-xl font-bold text-dhl-dark">Buenos días, {firstName}.</p>
-        <p className="text-base text-dhl-gray">Los espacios se actualizan a las 9:01 AM.</p>
-        <p className="text-base text-dhl-gray">Vuelve en un momento.</p>
-      </div>
-    );
-  }
-
   if (state === "available") {
     return (
       <div className="space-y-5">
         <div>
-          <p className="text-xl font-bold text-dhl-dark">Hay lugar hoy.</p>
+          <p className="text-xl font-bold text-dhl-dark">¡Mapa actualizado, {firstName}! 🗺️</p>
           <p className="text-sm text-dhl-gray mt-1">
-            {availableDesksCount} espacios disponibles ahora mismo.
+            {availableDesksCount} {availableDesksCount === 1 ? "espacio disponible" : "espacios disponibles"} ahora mismo.
           </p>
+          <p className="text-xs text-dhl-gray mt-1">Revisa los lugares liberados y elige tu base de hoy.</p>
         </div>
         <button
           onClick={() => router.push("/desks")}
@@ -75,9 +51,9 @@ export default function GuestCard({ firstName, availableDesksCount }: Props) {
         </div>
       )}
       <div>
-        <p className="text-base font-semibold text-dhl-dark">Oficina completa por ahora.</p>
-        <p className="text-xs text-dhl-gray mt-1">
-          Puede abrirse un espacio en cualquier momento. La app te avisa.
+        <p className="text-base font-semibold text-dhl-dark">¡Oficina a máxima capacidad! 🚀</p>
+        <p className="text-xs text-dhl-gray mt-2">
+          Hoy la base en Ciudad Empresarial está llena. Aprovecha de conectar con la operación visitando un Site o trabaja desde otro lugar inspirador. ¡A darle con todo!
         </p>
       </div>
       <div className="flex flex-col gap-3">

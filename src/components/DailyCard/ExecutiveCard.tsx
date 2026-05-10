@@ -68,9 +68,9 @@ export default function ExecutiveCard({ firstName, onComplete }: Props) {
     return (
       <div className="text-center space-y-3">
         <p className="text-2xl text-dhl-yellow">✦</p>
-        <p className="text-xl font-bold text-dhl-dark">Liberado. Gracias, {firstName}.</p>
+        <p className="text-xl font-bold text-dhl-dark">Gracias, {firstName}. 🎸</p>
         <p className="text-base text-dhl-gray">
-          Tu espacio ya está disponible para quien lo necesite hoy.
+          Tu oficina ahora aparece como CoWork Premium en el mapa. El equipo lo agradece.
         </p>
         <span className="riffs-pop inline-block mt-2 bg-dhl-yellow/20 text-dhl-dark font-bold px-3 py-1 rounded-full text-sm">
           + 50 Riffs
@@ -103,7 +103,7 @@ export default function ExecutiveCard({ firstName, onComplete }: Props) {
           disabled={loading}
           className="w-full py-3 rounded-xl font-semibold text-sm bg-dhl-yellow text-dhl-dark disabled:opacity-50"
         >
-          {loading ? "..." : "La libero hoy"}
+          {loading ? "..." : "Comparte tu escenario 🎸"}
         </button>
       </div>
     </div>
