@@ -2,16 +2,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/types";
 import { getRiffsLevel } from "@/types";
+import { getWeekStart } from "@/lib/dateUtils";
 import DailyCard from "@/components/DailyCard";
 import HomeDashboard from "@/components/HomeDashboard";
-
-function getWeekStart(date: Date): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  return d.toISOString().split("T")[0];
-}
 
 export default async function HomePage() {
   const supabase = await createClient();

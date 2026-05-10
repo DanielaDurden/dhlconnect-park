@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { DeskWithStatus, Profile, UserRole } from "@/types";
 
@@ -64,6 +64,19 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
   const totalFree    = desks.filter((d) => ["cowork","available"].includes(getDeskState(d, myProfile.id))).length;
   const isWorstCase  = !hasReservation && totalFree === 0 && past901;
 
+  // Log worst-case once when the condition first becomes true
+  const worstCaseLogged = useRef(false);
+  useEffect(() => {
+    if (isWorstCase && !worstCaseLogged.current) {
+      worstCaseLogged.current = true;
+      fetch("/api/worst-case", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "desks_full" }),
+      });
+    }
+  }, [isWorstCase]);
+
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
@@ -77,13 +90,6 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
     });
   }
 
-  async function logWorstCase() {
-    await fetch("/api/worst-case", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "desks_full" }),
-    });
-  }
 
   async function handleReserve(desk: DeskWithStatus) {
     setLoading(true);
@@ -404,7 +410,6 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
       {isWorstCase && (
         <div
           className="bg-gradient-to-br from-dhl-yellow/20 to-dhl-yellow/5 border border-dhl-yellow rounded-2xl px-5 py-5 text-center"
-          onLoad={() => logWorstCase()}
         >
           <p className="text-2xl font-black text-dhl-dark mb-1">🚀</p>
           <p className="text-sm font-bold text-dhl-dark">¡Oficina a máxima capacidad!</p>

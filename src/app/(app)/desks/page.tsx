@@ -32,11 +32,6 @@ export default async function DesksPage() {
     admin.from("area_desk_schedule").select("area, desk_count").eq("day_of_week", new Date().getDay()),
   ]);
 
-  if (desksError) {
-    console.error("[DesksPage] desks query error:", desksError);
-  } else {
-    console.log("[DesksPage] desks loaded:", desks?.length ?? 0);
-  }
 
   // Get assigned user profiles for fixed desks
   const assignedUserIds = (desks ?? [])

@@ -1,20 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { getWeekStart } from "@/lib/dateUtils";
 
 type CardState = "pending" | "released" | "using";
 
 interface Props {
   firstName: string;
   onComplete: () => void;
-}
-
-function getWeekStart(date: Date): string {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  return d.toISOString().split("T")[0];
 }
 
 export default function ExecutiveCard({ firstName, onComplete }: Props) {

@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isValidDateString } from "@/lib/dateUtils";
 import type { DayStatus } from "@/types";
 
-// GET /api/planner?week_start=YYYY-MM-DD
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const week_start = req.nextUrl.searchParams.get("week_start");
-  if (!week_start) return NextResponse.json({ error: "week_start required" }, { status: 400 });
+  if (!week_start || !isValidDateString(week_start)) {
+    return NextResponse.json({ error: "Invalid week_start" }, { status: 400 });
+  }
 
   const admin = createAdminClient();
   const { data } = await admin
@@ -22,7 +24,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ plans: data ?? [] });
 }
 
-// POST /api/planner — upsert a weekly plan entry
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -37,6 +38,12 @@ export async function POST(req: NextRequest) {
 
   if (!body.week_start || !body.day_of_week || !body.planned_status) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+  }
+  if (!isValidDateString(body.week_start)) {
+    return NextResponse.json({ error: "Invalid week_start" }, { status: 400 });
+  }
+  if (body.day_of_week < 1 || body.day_of_week > 5) {
+    return NextResponse.json({ error: "day_of_week must be 1–5" }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -55,14 +62,23 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Award riffs if solidarity release
+  // Guard double-award: only insert riff if none exists for this plan entry
   if (body.solidarity_released) {
-    await admin.from("riffs_log").insert({
-      user_id: user.id,
-      action: "solidarity_release",
-      points: 50,
-      ref_id: data.id,
-    });
+    const { count } = await admin
+      .from("riffs_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("action", "solidarity_release")
+      .eq("ref_id", data.id);
+
+    if (!count || count === 0) {
+      await admin.from("riffs_log").insert({
+        user_id: user.id,
+        action: "solidarity_release",
+        points: 50,
+        ref_id: data.id,
+      });
+    }
   }
 
   return NextResponse.json({ ok: true, plan: data });
