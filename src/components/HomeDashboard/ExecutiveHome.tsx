@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -29,6 +29,11 @@ export default function ExecutiveHome({
 }: Props) {
   const router = useRouter();
   const [recovering, setRecovering] = useState(false);
+  const [greeting, setGreeting] = useState("");
+  useEffect(() => {
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches");
+  }, []);
 
   const isReleased = weeklyPlanToday?.solidarity_released === true;
 
@@ -60,7 +65,7 @@ export default function ExecutiveHome({
     <div className="px-5 py-6 space-y-5">
       {/* Hero section */}
       <div>
-        <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">Buenos días</p>
+        {greeting && <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">{greeting}</p>}
         <div className="flex items-center gap-2 mt-1">
           <p className="text-3xl font-black text-dhl-dark leading-tight">{firstName}.</p>
           <span className="bg-dhl-yellow/30 text-dhl-dark text-xs font-bold px-2 py-0.5 rounded-full">Executive</span>

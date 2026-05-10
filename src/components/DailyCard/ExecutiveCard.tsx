@@ -81,7 +81,7 @@ export default function ExecutiveCard({ firstName, onComplete }: Props) {
     <div className="space-y-5">
       <div className="text-center">
         <p className="text-5xl mb-4">🏢</p>
-        <p className="text-2xl font-black text-dhl-dark">Buenos días, {firstName}.</p>
+        <p className="text-2xl font-black text-dhl-dark">Hola, {firstName}.</p>
         <p className="text-base text-dhl-gray mt-2 leading-snug">¿Usas tu oficina hoy?</p>
       </div>
       <div className="flex flex-col gap-3">
