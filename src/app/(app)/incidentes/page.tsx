@@ -10,9 +10,11 @@ export default async function IncidentesPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   const [{ data: profile }, { data: myIncidents }] = await Promise.all([
-    admin.from("profiles").select("id, full_name").eq("id", user!.id).single(),
+    admin.from("profiles").select("id, full_name, role").eq("id", user!.id).single(),
     admin.from("incidents").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(10),
   ]);
+
+  const isExecutive = profile?.role === "executive";
 
   return (
     <div className="px-4 py-5">
@@ -25,8 +27,8 @@ export default async function IncidentesPage() {
 
       <IncidentForm profile={profile!} />
 
-      {/* My recent incidents */}
-      {myIncidents && myIncidents.length > 0 && (
+      {/* My recent incidents — hidden for executives */}
+      {!isExecutive && myIncidents && myIncidents.length > 0 && (
         <div className="mt-6">
           <h2 className="text-sm font-bold text-dhl-dark mb-3">Mis reportes recientes</h2>
           <div className="space-y-3">
