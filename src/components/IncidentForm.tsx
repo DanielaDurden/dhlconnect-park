@@ -66,6 +66,7 @@ export default function IncidentForm({ profile }: Props) {
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -73,6 +74,7 @@ export default function IncidentForm({ profile }: Props) {
     if (!category || !description.trim()) return;
 
     setLoading(true);
+    setErrorMsg(null);
     const supabase = createClient();
 
     const { error } = await supabase.from("incidents").insert({
@@ -92,6 +94,8 @@ export default function IncidentForm({ profile }: Props) {
         setSuccess(false);
         router.refresh();
       }, 2500);
+    } else {
+      setErrorMsg("No se pudo enviar el reporte. Intenta de nuevo o comunícate directamente con el Office Manager.");
     }
     setLoading(false);
   }
@@ -177,6 +181,15 @@ export default function IncidentForm({ profile }: Props) {
       >
         {loading ? "Enviando..." : "Enviar reporte al Office Manager"}
       </button>
+
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-red flex-shrink-0 mt-0.5" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+          </svg>
+          <p className="text-sm text-dhl-red">{errorMsg}</p>
+        </div>
+      )}
 
       <p className="text-center text-xs text-dhl-gray">
         Centralizar reportes evita duplicidades y agiliza la coordinación con Aramark y Mantenimiento.
