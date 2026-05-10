@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,13 +14,14 @@ export default async function AdminLayout({
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
+  const adminClient = createAdminClient();
+  const { data: profile } = await adminClient
     .from("profiles")
     .select("role, full_name")
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") redirect("/");
+  if (profile?.role !== "admin") redirect("/home");
 
   return (
     <div className="min-h-screen bg-dhl-light-gray">
@@ -42,6 +44,7 @@ export default async function AdminLayout({
           {[
             { href: "/admin", label: "Dashboard" },
             { href: "/admin/desks", label: "🗺️ Mapa" },
+            { href: "/admin/parking", label: "🚗 Parking" },
             { href: "/admin/incidents", label: "⚠️ Incidentes" },
             { href: "/admin/rockstar", label: "🎸 Rockstar" },
             { href: "/admin/reportes", label: "📊 Reportes" },

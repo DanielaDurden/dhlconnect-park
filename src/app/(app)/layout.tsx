@@ -32,6 +32,8 @@ export default async function AppLayout({
 
   const userRole = (profile?.role ?? "professional") as import("@/types").UserRole;
 
+  if (userRole === "admin") redirect("/admin");
+
   const needsPolicy = !policyCookie && !profile?.policy_accepted_at;
 
   return (

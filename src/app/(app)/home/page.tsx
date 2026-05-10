@@ -78,6 +78,7 @@ export default async function HomePage() {
   ]);
 
   const role = (profile?.role ?? "professional") as UserRole;
+
   const totalRiffs = (riffsData ?? []).reduce((sum: number, r: { points: number }) => sum + r.points, 0);
   const riffsInfo = getRiffsLevel(totalRiffs);
   const solidarityCountVal = solidarityCount ?? 0;

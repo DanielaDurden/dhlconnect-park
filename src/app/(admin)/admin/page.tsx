@@ -216,7 +216,7 @@ export default async function AdminDashboard() {
         <div className={`rounded-2xl border p-5 shadow-sm ${demandaInsatisfecha > 0 ? "bg-red-50 border-red-200" : "bg-white border-dhl-mid-gray"}`}>
           <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">Demanda insatisfecha</p>
           <p className={`text-4xl font-black ${demandaInsatisfecha > 0 ? "text-red-600" : "text-dhl-dark"}`}>
-            {demandaInsatisfecha > 0 ? "😞" : "😊"} {demandaInsatisfecha}
+            😞 {demandaInsatisfecha}
           </p>
           <p className="text-xs text-dhl-gray mt-1">
             {desksFullCount > 0 && `${desksFullCount} oficina `}
