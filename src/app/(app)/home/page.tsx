@@ -137,6 +137,7 @@ export default async function HomePage() {
     riffsNext: riffsInfo.next,
     solidarityCount: solidarityCountVal,
     availableDesksCount,
+    isWeekend,
   };
 
   if (!dailyActionCompleted) {
