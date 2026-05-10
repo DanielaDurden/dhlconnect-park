@@ -55,55 +55,61 @@ export default function ProfessionalHome({
   }
 
   return (
-    <div className="px-4 py-5 space-y-4">
-      <p className="text-[1.1rem] font-bold text-dhl-dark">
-        Hola, {firstName}.
-      </p>
+    <div className="px-5 py-6 space-y-5">
+      {/* Hero section */}
+      <div>
+        <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">Bienvenid@</p>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-3xl font-black text-dhl-dark">{firstName}.</p>
+          <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-0.5 rounded-full">Professional</span>
+        </div>
+      </div>
 
       {/* Status puesto */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4">
-        <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-2">Tu puesto hoy</p>
-        {hasDesk ? (
-          <div>
-            <p className="font-semibold text-dhl-dark text-sm">
-              Puesto {deskCode} · Confirmado
-            </p>
-            <p className="text-xs text-dhl-gray mt-0.5">Hoy hasta las 18:00</p>
-            <button
-              onClick={handleRelease}
-              disabled={releasing}
-              className="mt-2 text-xs text-dhl-gray underline disabled:opacity-50"
-            >
-              {releasing ? "Liberando..." : "Liberar ahora"}
-            </button>
-          </div>
-        ) : deskReservationToday ? (
-          <div>
-            <p className="font-semibold text-dhl-dark text-sm">Puesto liberado automáticamente.</p>
-          </div>
-        ) : (
-          <div>
-            <p className="font-semibold text-dhl-dark text-sm">Sin puesto hoy</p>
-            <Link href="/desks" className="text-xs text-dhl-gray underline mt-0.5 inline-block">
-              Mira qué está disponible.
-            </Link>
-          </div>
-        )}
-      </div>
+      {hasDesk ? (
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-5 shadow-sm">
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">✅ CONFIRMADO</p>
+          <p className="text-3xl font-black text-green-900 mt-1">Puesto {deskCode}</p>
+          <p className="text-sm text-green-700/70 mt-1">Tu espacio está asegurado para hoy.</p>
+          <button
+            onClick={handleRelease}
+            disabled={releasing}
+            className="mt-3 text-xs text-green-600/70 underline disabled:opacity-50"
+          >
+            {releasing ? "Liberando..." : "Liberar ahora"}
+          </button>
+        </div>
+      ) : deskReservationToday ? (
+        <div className="bg-dhl-light-gray rounded-3xl p-5 shadow-sm">
+          <p className="text-[10px] font-black text-dhl-gray uppercase tracking-widest">📭 SIN PUESTO HOY</p>
+          <p className="text-xl font-bold text-dhl-dark mt-1">Tu puesto fue liberado.</p>
+          <Link href="/desks" className="text-sm text-dhl-gray underline mt-2 inline-block">
+            Mira qué hay libre →
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-dhl-light-gray rounded-3xl p-5 shadow-sm">
+          <p className="text-[10px] font-black text-dhl-gray uppercase tracking-widest">📭 SIN PUESTO HOY</p>
+          <p className="text-xl font-bold text-dhl-dark mt-1">Aún no has confirmado asistencia.</p>
+          <Link href="/desks" className="text-sm text-dhl-gray underline mt-2 inline-block">
+            Mira qué hay libre →
+          </Link>
+        </div>
+      )}
 
       {/* Status parking — solo si vino en auto */}
       {cameByAuto && (
-        <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4">
-          <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-2">Parking hoy</p>
+        <div className="bg-white rounded-3xl p-5 shadow-sm">
           {parkingResToday ? (
-            <p className="font-semibold text-dhl-dark text-sm">
-              Parking · Nivel {parkingResToday.level ?? "-2"} · Espacio {parkingResToday.spotNumber ?? "—"}
-            </p>
+            <div>
+              <p className="text-xl font-bold text-dhl-dark">🅿️ Espacio {parkingResToday.spotNumber ?? "—"}</p>
+              <p className="text-sm text-dhl-gray mt-1">Nivel {parkingResToday.level ?? "-2"}</p>
+            </div>
           ) : (
             <div>
-              <p className="text-sm text-dhl-dark">Sin parking reservado hoy.</p>
-              <Link href="/parking" className="text-xs text-dhl-gray underline mt-0.5 inline-block">
-                Reservar
+              <p className="text-base font-bold text-dhl-dark">Sin parking reservado.</p>
+              <Link href="/parking" className="text-sm text-dhl-gray underline mt-1 inline-block">
+                Reservar →
               </Link>
             </div>
           )}
@@ -112,39 +118,44 @@ export default function ProfessionalHome({
 
       {/* Riffs card */}
       <Link href="/profile">
-        <div className="bg-dhl-dark rounded-2xl px-4 py-3.5 flex items-center justify-between hover:opacity-90 transition-opacity">
-          <div>
-            <p className="text-dhl-yellow text-xs font-bold uppercase tracking-wide">Mis Riffs</p>
-            <p className="text-white text-xl font-black leading-tight">
-              {totalRiffs.toLocaleString("es-CL")}
-            </p>
-            <p className="text-white/60 text-xs mt-0.5">{riffsLevel}</p>
+        <div className="bg-dhl-dark rounded-3xl p-5 shadow-xl">
+          <div className="flex items-center justify-between">
+            <p className="text-dhl-yellow text-xs font-black uppercase tracking-wide">🎸 Rockstar Path</p>
+            <span className="bg-dhl-yellow/20 text-dhl-yellow text-[10px] font-bold px-2 py-0.5 rounded-full">{riffsLevel}</span>
           </div>
-          <div className="text-right">
-            <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden mb-1">
-              <div
-                className="h-full bg-dhl-yellow rounded-full transition-all"
-                style={{ width: `${riffsProgress}%` }}
-              />
-            </div>
-            <p className="text-white/50 text-[10px]">
-              {riffsLevel !== "Rock Legend"
-                ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
-                : "Nivel máximo"}
-            </p>
+          <p className="text-4xl font-black text-white leading-none mt-2">
+            {totalRiffs.toLocaleString("es-CL")}
+          </p>
+          <p className="text-white/50 text-sm mt-0.5">{riffsLevel}</p>
+          <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-dhl-yellow rounded-full transition-all"
+              style={{ width: `${riffsProgress}%` }}
+            />
           </div>
+          <p className="text-white/40 text-xs mt-1.5">
+            {riffsLevel !== "Rock Legend"
+              ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
+              : "¡Nivel máximo!"}
+          </p>
         </div>
       </Link>
 
-      {/* Accesos rápidos */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray divide-y divide-dhl-mid-gray overflow-hidden">
-        <Link href="/status" className="flex items-center justify-between px-4 py-3 hover:bg-dhl-light-gray transition-colors">
-          <span className="text-sm text-dhl-dark font-medium">Mi estado semanal</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-mid-gray" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/status">
+          <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2 active:scale-95 transition-transform">
+            <span className="text-2xl">📅</span>
+            <p className="text-sm font-bold text-dhl-dark">Mi Estado</p>
+            <p className="text-xs text-dhl-gray">Esta semana</p>
+          </div>
         </Link>
-        <Link href="/incidentes" className="flex items-center justify-between px-4 py-3 hover:bg-dhl-light-gray transition-colors">
-          <span className="text-sm text-dhl-dark font-medium">Incidentes</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-mid-gray" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        <Link href="/incidentes">
+          <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2 active:scale-95 transition-transform">
+            <span className="text-2xl">⚠️</span>
+            <p className="text-sm font-bold text-dhl-dark">Incidentes</p>
+            <p className="text-xs text-dhl-gray">Reportar</p>
+          </div>
         </Link>
       </div>
     </div>

@@ -23,16 +23,17 @@ export default function GuestCard({ firstName, availableDesksCount }: Props) {
   if (state === "available") {
     return (
       <div className="space-y-5">
-        <div>
-          <p className="text-xl font-bold text-dhl-dark">¡Mapa actualizado, {firstName}! 🗺️</p>
-          <p className="text-sm text-dhl-gray mt-1">
-            {availableDesksCount} {availableDesksCount === 1 ? "espacio disponible" : "espacios disponibles"} ahora mismo.
+        <div className="text-center">
+          <p className="text-5xl mb-3">🗺️</p>
+          <p className="text-2xl font-black text-dhl-dark">¡Hay lugar hoy, {firstName}!</p>
+          <p className="text-sm text-dhl-gray mt-2">
+            {availableDesksCount} {availableDesksCount === 1 ? "espacio" : "espacios"} libre{availableDesksCount === 1 ? "" : "s"} ahora mismo.
           </p>
-          <p className="text-xs text-dhl-gray mt-1">Revisa los lugares liberados y elige tu base de hoy.</p>
+          <p className="text-xs text-dhl-gray/70 mt-1">Revisa los lugares liberados y elige tu base de hoy.</p>
         </div>
         <button
           onClick={() => router.push("/desks")}
-          className="w-full py-3 rounded-xl font-semibold text-sm bg-dhl-dark text-white"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-dhl-dark text-white shadow-lg mt-4"
         >
           Ver el mapa →
         </button>
@@ -50,9 +51,10 @@ export default function GuestCard({ firstName, availableDesksCount }: Props) {
           </div>
         </div>
       )}
-      <div>
-        <p className="text-base font-semibold text-dhl-dark">¡Oficina a máxima capacidad! 🚀</p>
-        <p className="text-xs text-dhl-gray mt-2">
+      <div className="text-center">
+        <p className="text-5xl mb-3">🚀</p>
+        <p className="text-2xl font-black text-dhl-dark">Oficina al límite</p>
+        <p className="text-sm text-dhl-gray mt-3 leading-relaxed">
           Hoy la base en Ciudad Empresarial está llena. Aprovecha de conectar con la operación visitando un Site o trabaja desde otro lugar inspirador. ¡A darle con todo!
         </p>
       </div>
@@ -61,13 +63,13 @@ export default function GuestCard({ firstName, availableDesksCount }: Props) {
           onClick={() =>
             showToast("Recibirás una notificación cuando haya disponibilidad")
           }
-          className="w-full py-3 rounded-xl font-semibold text-sm bg-dhl-dark text-white"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-dhl-dark text-white"
         >
           Activar aviso
         </button>
         <button
           onClick={() => router.push("/parking")}
-          className="w-full py-3 rounded-xl font-semibold text-sm border border-dhl-mid-gray text-dhl-gray"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-white border-2 border-dhl-mid-gray text-dhl-gray"
         >
           Ver alternativas
         </button>

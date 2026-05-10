@@ -44,13 +44,18 @@ export default function DailyCard(props: DailyCardProps) {
     router.refresh();
   }
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+
   return (
-    <div className="min-h-[calc(100vh-56px)] bg-dhl-light-gray flex flex-col items-center justify-center px-4 py-8">
-      <div className="mb-6">
+    <div className="min-h-[calc(100vh-56px)] bg-gradient-to-b from-[#FFCD05]/30 via-white to-white flex flex-col items-center justify-center px-5 py-10">
+      <div className="mb-8">
         <Image src="/dhl-logo.svg" alt="DHL" width={64} height={9} priority />
       </div>
 
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-8">
+      <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest mb-4">{greeting}</p>
+
+      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8">
         {props.role === "executive" && (
           <ExecutiveCard
             firstName={props.firstName}

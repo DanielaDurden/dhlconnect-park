@@ -57,78 +57,95 @@ export default function ExecutiveHome({
   }
 
   return (
-    <div className="px-4 py-5 space-y-4">
-      <p className="text-[1.1rem] font-bold text-dhl-dark">
-        Hola, {firstName}.
-      </p>
-
-      {/* Status card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4">
-        <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-2">Tu oficina hoy</p>
-        {isReleased ? (
-          <div>
-            <p className="font-semibold text-dhl-dark text-sm">Tu oficina · Liberada hoy</p>
-            <p className="text-xs text-dhl-gray mt-0.5">Tu espacio está disponible para colegas.</p>
-            <button
-              onClick={handleRecover}
-              disabled={recovering}
-              className="mt-2 text-xs text-red-500 underline disabled:opacity-50"
-            >
-              {recovering ? "Recuperando..." : "Recuperar"}
-            </button>
-          </div>
-        ) : (
-          <div>
-            <p className="font-semibold text-dhl-dark text-sm">Tu oficina · Reservada</p>
-            <p className="text-xs text-dhl-gray mt-0.5">Tu espacio está asegurado para hoy.</p>
-          </div>
-        )}
+    <div className="px-5 py-6 space-y-5">
+      {/* Hero section */}
+      <div>
+        <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">Buenos días</p>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-3xl font-black text-dhl-dark leading-tight">{firstName}.</p>
+          <span className="bg-dhl-yellow/30 text-dhl-dark text-xs font-bold px-2 py-0.5 rounded-full">Executive</span>
+        </div>
       </div>
+
+      {/* Status card — oficina */}
+      {isReleased ? (
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-5 shadow-sm">
+          <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">🟢 LIBERADA HOY</p>
+          <p className="text-xl font-black text-green-900 mt-1">CoWork Premium activo</p>
+          <p className="text-sm text-green-700/70 mt-1">Tu espacio está disponible para el equipo.</p>
+          <button
+            onClick={handleRecover}
+            disabled={recovering}
+            className="mt-3 text-xs text-red-500 underline disabled:opacity-50"
+          >
+            {recovering ? "Recuperando..." : "Recuperar"}
+          </button>
+        </div>
+      ) : (
+        <div className="bg-gradient-to-br from-dhl-yellow/20 to-dhl-yellow/5 rounded-3xl p-5 shadow-sm">
+          <p className="text-[10px] font-black text-dhl-dark/50 uppercase tracking-widest">🔒 RESERVADA</p>
+          <p className="text-xl font-black text-dhl-dark mt-1">Tu oficina está asegurada.</p>
+          <p className="text-sm text-dhl-dark/60 mt-1">Tu espacio te espera hoy.</p>
+        </div>
+      )}
 
       {/* Riffs card */}
       <Link href="/profile">
-        <div className="bg-dhl-dark rounded-2xl px-4 py-3.5 flex items-center justify-between hover:opacity-90 transition-opacity">
-          <div>
-            <p className="text-dhl-yellow text-xs font-bold uppercase tracking-wide">Mis Riffs</p>
-            <p className="text-white text-xl font-black leading-tight">
-              {totalRiffs.toLocaleString("es-CL")}
-            </p>
-            <p className="text-white/60 text-xs mt-0.5">{riffsLevel}</p>
+        <div className="bg-dhl-dark rounded-3xl p-5 shadow-xl">
+          <div className="flex items-center justify-between">
+            <p className="text-dhl-yellow text-xs font-black uppercase tracking-wide">🎸 Rockstar Path</p>
+            <span className="bg-dhl-yellow/20 text-dhl-yellow text-[10px] font-bold px-2 py-0.5 rounded-full">{riffsLevel}</span>
           </div>
-          <div className="text-right">
-            <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden mb-1">
-              <div
-                className="h-full bg-dhl-yellow rounded-full transition-all"
-                style={{ width: `${riffsProgress}%` }}
-              />
-            </div>
-            <p className="text-white/50 text-[10px]">
-              {riffsLevel !== "Rock Legend"
-                ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
-                : "Nivel máximo"}
-            </p>
+          <p className="text-4xl font-black text-white leading-none mt-2">
+            {totalRiffs.toLocaleString("es-CL")}
+          </p>
+          <p className="text-white/50 text-sm mt-0.5">{riffsLevel}</p>
+          <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-dhl-yellow rounded-full transition-all"
+              style={{ width: `${riffsProgress}%` }}
+            />
           </div>
+          <p className="text-white/40 text-xs mt-1.5">
+            {riffsLevel !== "Rock Legend"
+              ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
+              : "¡Nivel máximo!"}
+          </p>
         </div>
       </Link>
 
       {/* Impacto del mes */}
       {solidarityCount > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4">
-          <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-2">Impacto del mes</p>
-          <p className="text-sm text-dhl-dark">Este mes liberaste {solidarityCount} {solidarityCount === 1 ? "día" : "días"}.</p>
-          <p className="text-xs text-dhl-gray mt-0.5">Apoyaste a {solidarityCount} {solidarityCount === 1 ? "persona" : "personas"}.</p>
+        <div className="bg-white rounded-3xl p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">🤝</span>
+            <div>
+              <p className="font-bold text-dhl-dark text-sm">
+                Este mes liberaste {solidarityCount} {solidarityCount === 1 ? "día" : "días"}.
+              </p>
+              <p className="text-xs text-dhl-gray mt-0.5">
+                Apoyaste a {solidarityCount} {solidarityCount === 1 ? "persona" : "personas"}.
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Accesos rápidos */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray divide-y divide-dhl-mid-gray overflow-hidden">
-        <Link href="/planner" className="flex items-center justify-between px-4 py-3 hover:bg-dhl-light-gray transition-colors">
-          <span className="text-sm text-dhl-dark font-medium">Planner semanal</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-mid-gray" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link href="/planner">
+          <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2 active:scale-95 transition-transform">
+            <span className="text-2xl">📅</span>
+            <p className="text-sm font-bold text-dhl-dark">Planner</p>
+            <p className="text-xs text-dhl-gray">Tu semana</p>
+          </div>
         </Link>
-        <Link href="/incidentes" className="flex items-center justify-between px-4 py-3 hover:bg-dhl-light-gray transition-colors">
-          <span className="text-sm text-dhl-dark font-medium">Incidentes</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-dhl-mid-gray" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        <Link href="/incidentes">
+          <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2 active:scale-95 transition-transform">
+            <span className="text-2xl">⚠️</span>
+            <p className="text-sm font-bold text-dhl-dark">Incidentes</p>
+            <p className="text-xs text-dhl-gray">Reportar</p>
+          </div>
         </Link>
       </div>
     </div>

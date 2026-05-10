@@ -42,7 +42,6 @@ export default async function HomePage() {
       .select("id, desk_id, checked_in, carpooling, status, desks(code)")
       .eq("user_id", user!.id)
       .eq("date", today)
-      .eq("status", "confirmed")
       .maybeSingle(),
     admin
       .from("parking_reservations")
@@ -93,19 +92,16 @@ export default async function HomePage() {
   if (role === "executive") {
     dailyActionCompleted = !!weeklyPlanToday;
   } else if (role === "professional") {
+    // Card shows until: checked in OR explicitly released (cancelled) today
     dailyActionCompleted =
       deskReservationToday?.checked_in === true ||
-      !deskReservationToday;
-    // professional with no reservation (released) → action done
-    // professional with confirmed reservation not yet checked in → show card
-    if (deskReservationToday && !deskReservationToday.checked_in) {
-      dailyActionCompleted = false;
-    }
+      deskReservationToday?.status === "cancelled";
   } else {
     dailyActionCompleted = true;
   }
 
-  const firstName = profile?.full_name?.split(" ")[0] ?? "ahí";
+  const rawName = profile?.full_name ?? user!.email?.split("@")[0] ?? "";
+  const firstName = rawName.split(" ")[0] || "hey";
 
   const sharedProps = {
     role,

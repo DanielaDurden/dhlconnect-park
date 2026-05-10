@@ -50,83 +50,80 @@ export default function GuestHome({
   }
 
   return (
-    <div className="px-4 py-5 space-y-4">
-      <p className="text-[1.1rem] font-bold text-dhl-dark">
-        Hola, {firstName}.
-      </p>
+    <div className="px-5 py-6 space-y-5">
+      {/* Hero section */}
+      <div>
+        <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">Hola de nuevo,</p>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-3xl font-black text-dhl-dark">{firstName}.</p>
+          <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-0.5 rounded-full">Guest</span>
+        </div>
+      </div>
 
       {/* Status espacio */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4">
-        <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-2">Tu espacio hoy</p>
-        {hasOccupied ? (
-          <div>
-            <p className="font-semibold text-dhl-dark text-sm">
-              Espacio {deskCode} · Ocupado por ti
-            </p>
-            <div className="flex items-center gap-2 mt-2">
-              <button
-                onClick={handleRelease}
-                disabled={releasing}
-                className="text-xs text-dhl-gray underline disabled:opacity-50"
-              >
-                {releasing ? "Liberando..." : "Liberar"}
-              </button>
-              <span className="text-xs text-dhl-gray">+20 Riffs</span>
-            </div>
+      {hasOccupied ? (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-5 shadow-sm">
+          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">📍 OCUPADO POR TI</p>
+          <p className="text-3xl font-black text-blue-900 mt-1">Espacio {deskCode}</p>
+          <div className="mt-3">
+            <button
+              onClick={handleRelease}
+              disabled={releasing}
+              className="inline-flex items-center gap-1 text-xs text-blue-500/80 underline disabled:opacity-50"
+            >
+              {releasing ? "Liberando..." : "Liberar espacio"}
+            </button>
+            <p className="text-[10px] text-dhl-gray mt-1">+20 Riffs si liberas antes</p>
           </div>
-        ) : (
-          <div>
-            <p className="font-semibold text-dhl-dark text-sm">Sin espacio ocupado ahora.</p>
-            <Link href="/desks" className="text-xs text-dhl-gray underline mt-0.5 inline-block">
-              Ver disponibilidad
-            </Link>
-          </div>
-        )}
-      </div>
-
-      {/* Disponibilidad en tiempo real */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray p-4">
-        <p className="text-xs font-bold text-dhl-gray uppercase tracking-wide mb-2">Disponibilidad ahora</p>
-        <p className="text-sm text-dhl-dark font-semibold">
-          {availableDesksCount} puestos libres ahora mismo
-        </p>
-        <p className="text-xs text-dhl-gray mt-0.5">Actualizado al cargar</p>
-      </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl p-5 shadow-sm">
+          <p className="text-5xl font-black text-dhl-dark">{availableDesksCount}</p>
+          <p className="text-sm text-dhl-gray mt-1">espacios disponibles ahora</p>
+          <p className="text-xs text-dhl-gray/70 mt-2">
+            Si terminas antes, libera tu espacio. Alguien más lo agradecerá. +20 Riffs 🙌
+          </p>
+          <Link
+            href="/desks"
+            className="block bg-dhl-dark text-white py-3 rounded-2xl text-sm font-bold text-center w-full mt-3"
+          >
+            Ver el mapa →
+          </Link>
+        </div>
+      )}
 
       {/* Riffs card */}
       <Link href="/profile">
-        <div className="bg-dhl-dark rounded-2xl px-4 py-3.5 flex items-center justify-between hover:opacity-90 transition-opacity">
-          <div>
-            <p className="text-dhl-yellow text-xs font-bold uppercase tracking-wide">Mis Riffs</p>
-            <p className="text-white text-xl font-black leading-tight">
-              {totalRiffs.toLocaleString("es-CL")}
-            </p>
-            <p className="text-white/60 text-xs mt-0.5">{riffsLevel}</p>
+        <div className="bg-dhl-dark rounded-3xl p-5 shadow-xl">
+          <div className="flex items-center justify-between">
+            <p className="text-dhl-yellow text-xs font-black uppercase tracking-wide">🎸 Rockstar Path</p>
+            <span className="bg-dhl-yellow/20 text-dhl-yellow text-[10px] font-bold px-2 py-0.5 rounded-full">{riffsLevel}</span>
           </div>
-          <div className="text-right">
-            <div className="w-24 h-1.5 bg-white/20 rounded-full overflow-hidden mb-1">
-              <div
-                className="h-full bg-dhl-yellow rounded-full transition-all"
-                style={{ width: `${riffsProgress}%` }}
-              />
-            </div>
-            <p className="text-white/50 text-[10px]">
-              {riffsLevel !== "Rock Legend"
-                ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
-                : "Nivel máximo"}
-            </p>
+          <p className="text-4xl font-black text-white leading-none mt-2">
+            {totalRiffs.toLocaleString("es-CL")}
+          </p>
+          <p className="text-white/50 text-sm mt-0.5">{riffsLevel}</p>
+          <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-dhl-yellow rounded-full transition-all"
+              style={{ width: `${riffsProgress}%` }}
+            />
           </div>
+          <p className="text-white/40 text-xs mt-1.5">
+            {riffsLevel !== "Rock Legend"
+              ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
+              : "¡Nivel máximo!"}
+          </p>
         </div>
       </Link>
 
-      {/* Nota cultural — solo si no tiene espacio */}
-      {!hasOccupied && (
-        <div className="bg-dhl-light-gray rounded-2xl p-4 border border-dhl-mid-gray">
-          <p className="text-xs text-dhl-gray leading-relaxed">
-            Si terminas antes, libera tu espacio. Alguien más lo agradecerá. +20 Riffs
-          </p>
-        </div>
-      )}
+      {/* Quick action — un solo botón grande */}
+      <Link
+        href="/desks"
+        className="block bg-dhl-yellow text-dhl-dark w-full py-4 rounded-2xl font-bold text-sm text-center"
+      >
+        🗺️ Ver mapa de puestos
+      </Link>
     </div>
   );
 }

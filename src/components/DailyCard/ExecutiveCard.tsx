@@ -67,16 +67,16 @@ export default function ExecutiveCard({ firstName, onComplete }: Props) {
   if (state === "released") {
     return (
       <div className="text-center space-y-3">
-        <p className="text-2xl text-dhl-yellow">✦</p>
-        <p className="text-xl font-bold text-dhl-dark">Gracias, {firstName}. 🎸</p>
-        <p className="text-base text-dhl-gray">
+        <p className="text-5xl mb-3">🎸</p>
+        <p className="text-2xl font-black text-dhl-dark">Gracias, {firstName}.</p>
+        <p className="text-sm text-dhl-gray mt-2">
           Tu oficina ahora aparece como CoWork Premium en el mapa. El equipo lo agradece.
         </p>
-        <span className="riffs-pop inline-block mt-2 bg-dhl-yellow/20 text-dhl-dark font-bold px-3 py-1 rounded-full text-sm">
-          + 50 Riffs
+        <span className="riffs-pop inline-block mt-4 bg-dhl-yellow text-dhl-dark font-black px-4 py-2 rounded-full text-sm">
+          + 50 Riffs 🤘
         </span>
-        <div>
-          <a href="/profile" className="text-xs text-dhl-gray underline">
+        <div className="mt-3">
+          <a href="/profile" className="text-xs text-dhl-gray/70 underline">
             Ver mi impacto →
           </a>
         </div>
@@ -86,22 +86,23 @@ export default function ExecutiveCard({ firstName, onComplete }: Props) {
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-xl font-bold text-dhl-dark">Buenos días, {firstName}.</p>
-        <p className="text-base text-dhl-gray mt-2">¿Usas tu oficina hoy?</p>
+      <div className="text-center">
+        <p className="text-5xl mb-4">🏢</p>
+        <p className="text-2xl font-black text-dhl-dark">Buenos días, {firstName}.</p>
+        <p className="text-base text-dhl-gray mt-2 leading-snug">¿Usas tu oficina hoy?</p>
       </div>
       <div className="flex flex-col gap-3">
         <button
           onClick={handleUse}
           disabled={loading}
-          className="w-full py-3 rounded-xl font-semibold text-sm bg-dhl-dark text-white disabled:opacity-50"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-dhl-dark text-white shadow-lg disabled:opacity-50"
         >
           {loading ? "..." : "Sí, la uso"}
         </button>
         <button
           onClick={handleRelease}
           disabled={loading}
-          className="w-full py-3 rounded-xl font-semibold text-sm bg-dhl-yellow text-dhl-dark disabled:opacity-50"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-dhl-yellow text-dhl-dark disabled:opacity-50"
         >
           {loading ? "..." : "Comparte tu escenario 🎸"}
         </button>

@@ -116,11 +116,12 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
   if (state === "confirmed") {
     return (
       <div className="text-center space-y-3">
-        <p className="text-xl font-bold text-dhl-dark">✦  Puesto confirmado.</p>
-        <p className="text-base text-dhl-dark">{deskCode} es tuyo hoy.</p>
-        <p className="text-base text-dhl-gray">Que sea un buen día en la oficina.</p>
+        <p className="text-5xl mb-3">✅</p>
+        <p className="text-2xl font-black text-dhl-dark">¡Puesto confirmado!</p>
+        <p className="text-base text-dhl-gray mt-2">{deskCode} es tuyo hoy.</p>
+        <p className="text-sm text-dhl-gray">Que sea un buen día. 🙌</p>
         {didCarpooling && (
-          <span className="riffs-pop inline-block bg-dhl-yellow/20 text-dhl-dark font-bold px-3 py-1 rounded-full text-sm">
+          <span className="riffs-pop inline-block mt-4 bg-dhl-yellow text-dhl-dark font-black px-4 py-2 rounded-full text-sm">
             + 30 Riffs · Rockstar Path 🚗
           </span>
         )}
@@ -131,10 +132,10 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
   if (state === "released_voluntary") {
     return (
       <div className="text-center space-y-3">
-        <p className="text-base font-semibold text-dhl-dark">
-          Entendido. Tu puesto queda libre para quien lo necesite hoy.
-        </p>
-        <p className="text-base text-dhl-gray">Nos vemos cuando vuelvas.</p>
+        <p className="text-5xl mb-3">🙏</p>
+        <p className="text-xl font-black text-dhl-dark">Entendido, {firstName}.</p>
+        <p className="text-sm text-dhl-gray mt-2">Tu puesto queda libre para quien lo necesite hoy.</p>
+        <p className="text-sm text-dhl-gray">Nos vemos cuando vuelvas. 👋</p>
       </div>
     );
   }
@@ -142,11 +143,12 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
   if (state === "auto_released") {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-sm text-dhl-dark">Tu puesto fue liberado a las 9:01 AM.</p>
-        <p className="text-xs text-dhl-gray">¿Ya estás aquí? Mira qué hay libre.</p>
+        <p className="text-5xl mb-3">⏰</p>
+        <p className="text-base font-bold text-dhl-dark">Tu puesto fue liberado a las 9:01 AM.</p>
+        <p className="text-sm text-dhl-gray mt-2">¿Ya estás aquí? Mira qué hay libre.</p>
         <button
           onClick={() => router.push("/desks")}
-          className="w-full py-3 rounded-xl font-semibold text-sm border border-dhl-dark text-dhl-dark"
+          className="w-full py-4 rounded-2xl font-bold text-base border-2 border-dhl-dark text-dhl-dark"
         >
           Ver disponibilidad
         </button>
@@ -159,26 +161,21 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
     return (
       <div className="space-y-5">
         <div>
-          <p className="text-xl font-bold text-dhl-dark">Hola, {firstName}. ¿Vienes hoy?</p>
-          {deskCode && (
-            <p className="text-xs text-dhl-gray mt-1">
-              Tu puesto {deskCode} te espera hasta las 9:00 AM.
-            </p>
-          )}
+          <p className="text-xl font-black text-dhl-dark mb-4">¡Bienvenido! 👋</p>
         </div>
 
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-dhl-dark font-medium mb-2">¿Viniste en auto?</p>
+            <p className="text-sm font-bold text-dhl-dark mb-2">¿Viniste en auto?</p>
             <div className="flex gap-2">
               {[true, false].map((val) => (
                 <button
                   key={String(val)}
                   onClick={() => setCameByAuto(val)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
                     cameByAuto === val
                       ? "border-dhl-dark bg-dhl-dark text-white"
-                      : "border-dhl-mid-gray text-dhl-gray"
+                      : "border-dhl-mid-gray text-dhl-gray bg-white"
                   }`}
                 >
                   {val ? "Sí" : "No"}
@@ -188,16 +185,16 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
           </div>
 
           <div>
-            <p className="text-sm text-dhl-dark font-medium mb-2">¿Vienes acompañado? 🚗</p>
+            <p className="text-sm font-bold text-dhl-dark mb-2">¿Vienes acompañado? 🚗</p>
             <div className="flex gap-2">
               {[true, false].map((val) => (
                 <button
                   key={String(val)}
                   onClick={() => setDidCarpooling(val)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-semibold border-2 transition-all ${
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-all ${
                     didCarpooling === val
                       ? "border-dhl-dark bg-dhl-dark text-white"
-                      : "border-dhl-mid-gray text-dhl-gray"
+                      : "border-dhl-mid-gray text-dhl-gray bg-white"
                   }`}
                 >
                   {val ? "Sí" : "No"}
@@ -210,7 +207,7 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
         <button
           onClick={handleConfirmCheckin}
           disabled={!canSubmit || loading}
-          className="w-full py-3 rounded-xl font-semibold text-sm bg-dhl-dark text-white disabled:opacity-40"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-dhl-yellow text-dhl-dark disabled:opacity-40"
         >
           {loading ? "..." : "Listo, confirmar"}
         </button>
@@ -222,31 +219,32 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
   const showCountdown = minutesLeft <= 60 && minutesLeft > 0;
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-xl font-bold text-dhl-dark">Hola, {firstName}. ¿Vienes hoy?</p>
+      <div className="text-center">
+        <p className="text-5xl mb-4">⚡</p>
+        <p className="text-2xl font-black text-dhl-dark">Hola, {firstName}.</p>
         {deskCode && (
-          <p className="text-xs text-dhl-gray mt-1">
+          <p className="text-sm text-dhl-gray mt-2">
             Tu puesto {deskCode} te espera hasta las 9:00 AM.
           </p>
         )}
         {showCountdown && (
-          <p className="text-xs text-amber-600 font-semibold mt-1">
+          <span className="inline-block mt-2 text-sm font-bold text-amber-500 bg-amber-50 px-3 py-1.5 rounded-full">
             ⏱ Quedan {minutesLeft} minutos
-          </p>
+          </span>
         )}
       </div>
       <div className="flex flex-col gap-3">
         <button
           onClick={handleYesComing}
           disabled={loading}
-          className="w-full py-3 rounded-xl font-semibold text-sm bg-dhl-dark text-white disabled:opacity-50"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-dhl-dark text-white shadow-lg disabled:opacity-50"
         >
           Sí, ya llegué
         </button>
         <button
           onClick={handleNotComing}
           disabled={loading}
-          className="w-full py-3 rounded-xl font-semibold text-sm bg-white text-dhl-gray border border-dhl-mid-gray disabled:opacity-50"
+          className="w-full py-4 rounded-2xl font-bold text-base bg-white text-dhl-gray border-2 border-dhl-mid-gray disabled:opacity-50"
         >
           {loading ? "..." : "Hoy no vengo"}
         </button>
