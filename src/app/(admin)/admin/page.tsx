@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import React from "react";
+import { getWeekStart } from "@/lib/dateUtils";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -10,54 +11,137 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: "Otro",
 };
 
-const WORST_CASE_LABELS: Record<string, string> = {
-  parking_full: "Parking lleno",
-  desks_full:   "Oficina llena",
+const ROLE_LABELS: Record<string, string> = {
+  executive: "Executive",
+  professional: "Professional",
+  guest: "Visita",
+  admin: "Admin",
+  client: "Cliente",
+};
+
+type IncidentRow = {
+  id: string;
+  category: string;
+  description: string;
+  location: string | null;
+  status: string;
+  created_at: string;
+  profiles: { full_name: string } | null;
+};
+
+type ReservationWithRole = {
+  profiles: { role: string } | null;
+};
+
+type RiffsRow = {
+  user_id: string;
+  points: number;
+  profiles: { full_name: string; role: string } | null;
 };
 
 export default async function AdminDashboard() {
-  const supabase = createAdminClient();
-  const today = new Date().toISOString().split("T")[0];
+  const admin = createAdminClient();
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  const weekStart = getWeekStart(now);
+  const rawDay = now.getDay();
+  const dayOfWeek = rawDay === 0 ? 7 : rawDay;
+  const isWeekend = rawDay === 0 || rawDay === 6;
 
   const [
-    { count: usersCount },
-    { data: deskRes },
-    { data: parkingRes },
-    { count: openIncidentsCount },
-    { data: recentIncidents },
+    { count: totalDesks },
+    { data: reservedDesks },
+    { count: totalParkingSpots },
+    { count: reservedParking },
     { data: worstCaseToday },
+    { data: sharingToday },
+    { count: totalExecutives },
+    { data: carpoolingRiffsWeek },
+    { data: recentIncidents },
+    { count: openIncidents },
+    { data: reservationsByRole },
     { data: topRiffs },
-    { data: checkinsToday },
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("desk_reservations").select("checked_in").eq("date", today).eq("status", "confirmed"),
-    supabase.from("parking_reservations").select("id").eq("date", today).eq("status", "confirmed"),
-    supabase.from("incidents").select("*", { count: "exact", head: true }).eq("status", "open"),
-    supabase.from("incidents").select("*, profiles!inner(full_name)").eq("status", "open").order("created_at", { ascending: false }).limit(5),
-    supabase.from("worst_case_log").select("type").eq("date", today),
-    supabase.from("riffs_log").select("user_id, points, profiles!inner(full_name)").order("created_at", { ascending: false }).limit(50),
-    supabase.from("desk_reservations").select("checked_in").eq("date", today).eq("status", "confirmed"),
+    admin.from("desks").select("id", { count: "exact", head: true }).eq("is_active", true),
+    admin.from("desk_reservations")
+      .select("user_id, checked_in, profiles!inner(role)")
+      .eq("date", today)
+      .eq("status", "confirmed"),
+    admin.from("parking_spots").select("id", { count: "exact", head: true }).eq("is_active", true),
+    admin.from("parking_reservations")
+      .select("id", { count: "exact", head: true })
+      .eq("date", today)
+      .eq("status", "confirmed"),
+    admin.from("worst_case_log").select("type").eq("date", today),
+    isWeekend
+      ? Promise.resolve({ data: [] as { id: string }[] })
+      : admin.from("weekly_plans")
+          .select("id")
+          .eq("week_start", weekStart)
+          .eq("day_of_week", dayOfWeek)
+          .eq("solidarity_released", true),
+    admin.from("profiles").select("id", { count: "exact", head: true }).eq("role", "executive"),
+    admin.from("riffs_log")
+      .select("points")
+      .eq("action", "checkin_carpooling")
+      .gte("created_at", weekStart),
+    admin.from("incidents")
+      .select("id, category, description, location, status, created_at, profiles!inner(full_name)")
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    admin.from("incidents").select("id", { count: "exact", head: true }).eq("status", "open"),
+    admin.from("desk_reservations")
+      .select("profiles!inner(role)")
+      .eq("date", today)
+      .eq("status", "confirmed"),
+    admin.from("riffs_log")
+      .select("user_id, points, profiles!inner(full_name, role)")
+      .gte("created_at", weekStart)
+      .order("created_at", { ascending: false })
+      .limit(300),
   ]);
 
-  const deskResCount = deskRes?.length ?? 0;
-  const parkingResCount = parkingRes?.length ?? 0;
+  // Ocupación
+  const deskResCount = reservedDesks?.length ?? 0;
+  const totalDesksCount = totalDesks ?? 0;
+  const deskOccupancyPct = totalDesksCount > 0 ? Math.round((deskResCount / totalDesksCount) * 100) : 0;
+  const parkingResCount = reservedParking ?? 0;
+  const totalParkingCount = totalParkingSpots ?? 0;
+  const parkingOccupancyPct = totalParkingCount > 0 ? Math.round((parkingResCount / totalParkingCount) * 100) : 0;
 
-  // Green Score: % of desk reservations with check-in
-  const checkins = checkinsToday ?? [];
-  const greenScore = checkins.length > 0
-    ? Math.round((checkins.filter((c: { checked_in: boolean }) => c.checked_in).length / checkins.length) * 100)
-    : 0;
+  // Demanda insatisfecha
+  const worstList = (worstCaseToday ?? []) as { type: string }[];
+  const demandaInsatisfecha = worstList.length;
+  const parkingFullCount = worstList.filter((w) => w.type === "parking_full").length;
+  const desksFullCount = worstList.filter((w) => w.type === "desks_full").length;
 
-  // Worst Case KPI
-  const parkingFullCount = (worstCaseToday ?? []).filter((w: { type: string }) => w.type === "parking_full").length;
-  const desksFullCount   = (worstCaseToday ?? []).filter((w: { type: string }) => w.type === "desks_full").length;
+  // Sharing Rate
+  const sharingCount = sharingToday?.length ?? 0;
+  const totalExec = totalExecutives ?? 0;
+  const sharingRatePct = totalExec > 0 ? Math.round((sharingCount / totalExec) * 100) : 0;
 
-  // Top Riffs per user (simplified aggregation)
-  const riffsByUser: Record<string, { name: string; total: number }> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const r of (topRiffs ?? []) as any[]) {
+  // Green Score
+  const greenScore = (carpoolingRiffsWeek ?? []).reduce(
+    (sum: number, r: { points: number }) => sum + r.points, 0
+  );
+
+  // Uso por rol
+  const roleCount: Record<string, number> = {};
+  for (const r of (reservationsByRole ?? []) as unknown as ReservationWithRole[]) {
+    const role = r.profiles?.role ?? "unknown";
+    roleCount[role] = (roleCount[role] ?? 0) + 1;
+  }
+
+  // Top Riffs esta semana
+  const riffsByUser: Record<string, { name: string; role: string; total: number }> = {};
+  for (const r of (topRiffs ?? []) as unknown as RiffsRow[]) {
     if (!riffsByUser[r.user_id]) {
-      riffsByUser[r.user_id] = { name: r.profiles?.full_name ?? "—", total: 0 };
+      riffsByUser[r.user_id] = {
+        name: r.profiles?.full_name ?? "—",
+        role: r.profiles?.role ?? "—",
+        total: 0,
+      };
     }
     riffsByUser[r.user_id].total += r.points;
   }
@@ -65,101 +149,203 @@ export default async function AdminDashboard() {
     .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 5);
 
-  const stats = [
-    {
-      label: "Usuarios registrados",
-      value: usersCount ?? 0,
-      color: "bg-blue-50 border-blue-200",
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-    },
-    {
-      label: "Puestos reservados hoy",
-      value: deskResCount,
-      color: "bg-green-50 border-green-200",
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>,
-    },
-    {
-      label: "Parking reservado hoy",
-      value: parkingResCount,
-      color: "bg-purple-50 border-purple-200",
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true"><path d="M19 17H5v-6l2.5-6H16.5L19 11v6Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>,
-    },
-    {
-      label: "Incidentes abiertos",
-      value: openIncidentsCount ?? 0,
-      color: "bg-red-50 border-red-200",
-      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
-    },
-  ];
+  const showAlert = demandaInsatisfecha >= 3;
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-dhl-dark mb-6">Panel de Administración</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-dhl-dark">Dashboard</h1>
+          <p className="text-sm text-dhl-gray mt-0.5">
+            {now.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
+            {" · "}
+            <span className="text-green-600 font-semibold">● Live</span>
+          </p>
+        </div>
+        <Link
+          href="/admin/desks"
+          className="bg-dhl-dark text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-dhl-dark/90 transition-colors"
+        >
+          Optimizar espacios ahora →
+        </Link>
+      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className={`bg-white rounded-2xl border p-4 shadow-sm ${stat.color}`}>
-            <div className="mb-2 text-dhl-gray">{stat.icon}</div>
-            <div className="text-3xl font-bold text-dhl-dark">{stat.value}</div>
-            <div className="text-xs text-dhl-gray mt-1">{stat.label}</div>
+      {/* Alert banner */}
+      {showAlert && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <path d="M12 9v4"/><path d="M12 17h.01"/>
+          </svg>
+          <div>
+            <p className="font-bold text-red-700 text-sm">
+              Atención: La demanda insatisfecha ha subido un {Math.round((demandaInsatisfecha / Math.max(deskResCount, 1)) * 100)}% esta semana.
+            </p>
+            <p className="text-xs text-red-600 mt-0.5">¿Es hora de revisar la política de Co-Work?</p>
           </div>
+        </div>
+      )}
+
+      {/* KPI Scorecards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
+          <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">Puestos hoy</p>
+          <p className="text-4xl font-black text-dhl-dark">{deskOccupancyPct}%</p>
+          <p className="text-xs text-dhl-gray mt-1">{deskResCount} / {totalDesksCount} desks</p>
+          <div className="mt-3 h-1.5 bg-dhl-mid-gray rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${deskOccupancyPct >= 85 ? "bg-red-500" : deskOccupancyPct >= 65 ? "bg-amber-400" : "bg-green-500"}`}
+              style={{ width: `${deskOccupancyPct}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
+          <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">Parking hoy</p>
+          <p className="text-4xl font-black text-dhl-dark">{parkingOccupancyPct}%</p>
+          <p className="text-xs text-dhl-gray mt-1">{parkingResCount} / {totalParkingCount} spots</p>
+          <div className="mt-3 h-1.5 bg-dhl-mid-gray rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${parkingOccupancyPct >= 85 ? "bg-red-500" : parkingOccupancyPct >= 65 ? "bg-amber-400" : "bg-green-500"}`}
+              style={{ width: `${parkingOccupancyPct}%` }}
+            />
+          </div>
+        </div>
+
+        <div className={`rounded-2xl border p-5 shadow-sm ${demandaInsatisfecha > 0 ? "bg-red-50 border-red-200" : "bg-white border-dhl-mid-gray"}`}>
+          <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">Demanda insatisfecha</p>
+          <p className={`text-4xl font-black ${demandaInsatisfecha > 0 ? "text-red-600" : "text-dhl-dark"}`}>
+            {demandaInsatisfecha > 0 ? "😞" : "😊"} {demandaInsatisfecha}
+          </p>
+          <p className="text-xs text-dhl-gray mt-1">
+            {desksFullCount > 0 && `${desksFullCount} oficina `}
+            {parkingFullCount > 0 && `${parkingFullCount} parking`}
+            {demandaInsatisfecha === 0 && "Sin capacidad agotada hoy"}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
+          <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">Sharing Rate</p>
+          <p className="text-4xl font-black text-dhl-dark">{sharingRatePct}%</p>
+          <p className="text-xs text-dhl-gray mt-1">{sharingCount} / {totalExec} ejecutivos</p>
+          <div className="mt-3 h-1.5 bg-dhl-mid-gray rounded-full overflow-hidden">
+            <div className="h-full bg-dhl-yellow rounded-full transition-all" style={{ width: `${sharingRatePct}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Green Score + Uso por Rol */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-dhl-dark rounded-2xl p-5 shadow-xl">
+          <p className="text-dhl-yellow text-[11px] font-black uppercase tracking-widest">🌿 Green Score Semanal</p>
+          <p className="text-5xl font-black text-white mt-3">{greenScore.toLocaleString("es-CL")}</p>
+          <p className="text-white/50 text-sm mt-1">Riffs generados por carpooling esta semana</p>
+          <p className="text-white/30 text-xs mt-2">Métrica de movilidad sostenible · w/c {weekStart}</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
+          <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-4">Uso por perfil hoy</p>
+          {deskResCount === 0 ? (
+            <p className="text-sm text-dhl-gray/60 text-center py-6">Sin reservas aún</p>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(roleCount)
+                .sort((a, b) => b[1] - a[1])
+                .map(([role, count]) => {
+                  const pct = Math.round((count / deskResCount) * 100);
+                  return (
+                    <div key={role}>
+                      <div className="flex justify-between text-xs mb-1.5">
+                        <span className="font-semibold text-dhl-dark">{ROLE_LABELS[role] ?? role}</span>
+                        <span className="text-dhl-gray">{count} personas · {pct}%</span>
+                      </div>
+                      <div className="h-2 bg-dhl-mid-gray rounded-full overflow-hidden">
+                        <div className="h-full bg-dhl-yellow rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { href: "/admin/desks",     icon: "🗺️",  title: "Mapa Maestro",   desc: "Gestionar puestos" },
+          { href: "/admin/incidents", icon: "⚠️",  title: "Incidentes",     desc: `${openIncidents ?? 0} abiertos` },
+          { href: "/admin/rockstar",  icon: "🎸",  title: "Rockstar Path",  desc: "Leaderboard · ajustes" },
+          { href: "/admin/reportes",  icon: "📊",  title: "Reportes",       desc: "Descarga histórica" },
+        ].map((item) => (
+          <Link key={item.href} href={item.href}>
+            <div className="bg-white rounded-2xl border border-dhl-mid-gray p-4 shadow-sm hover:border-dhl-yellow hover:shadow-md transition-all cursor-pointer">
+              <span className="text-2xl block mb-2">{item.icon}</span>
+              <p className="font-bold text-dhl-dark text-sm">{item.title}</p>
+              <p className="text-xs text-dhl-gray mt-0.5">{item.desc}</p>
+            </div>
+          </Link>
         ))}
       </div>
 
-      {/* Blueprint KPIs */}
-      <div className="bg-white rounded-2xl border border-dhl-mid-gray shadow-sm overflow-hidden mb-6">
-        <div className="bg-dhl-yellow px-4 py-3">
-          <h2 className="text-dhl-dark font-bold text-sm">KPIs Blueprint</h2>
+      {/* Recent incidents */}
+      <div className="bg-white rounded-2xl border border-dhl-mid-gray shadow-sm overflow-hidden">
+        <div className="px-5 py-4 flex items-center justify-between border-b border-dhl-mid-gray">
+          <h2 className="font-bold text-dhl-dark">Inbox de incidentes</h2>
+          <Link href="/admin/incidents" className="text-xs text-dhl-gray hover:text-dhl-dark transition-colors">
+            Ver todos →
+          </Link>
         </div>
-        <div className="divide-y divide-dhl-mid-gray">
-          {/* Green Score */}
-          <div className="px-4 py-4">
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-sm font-semibold text-dhl-dark">Green Score</p>
-              <span className={`text-sm font-bold ${greenScore >= 70 ? "text-green-600" : greenScore >= 40 ? "text-amber-600" : "text-red-600"}`}>
-                {greenScore}%
-              </span>
-            </div>
-            <div className="h-2 bg-dhl-mid-gray rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${greenScore >= 70 ? "bg-green-500" : greenScore >= 40 ? "bg-amber-400" : "bg-red-500"}`}
-                style={{ width: `${greenScore}%` }}
-              />
-            </div>
-            <p className="text-xs text-dhl-gray mt-1">% de reservas con check-in registrado hoy</p>
-          </div>
-
-          {/* Demanda Insatisfecha */}
-          <div className="px-4 py-4">
-            <p className="text-sm font-semibold text-dhl-dark mb-2">Demanda Insatisfecha (hoy)</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className={`rounded-xl border px-3 py-2 text-center ${desksFullCount > 0 ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-200"}`}>
-                <p className={`text-xl font-bold ${desksFullCount > 0 ? "text-red-600" : "text-dhl-gray"}`}>{desksFullCount}</p>
-                <p className="text-[10px] text-dhl-gray">{WORST_CASE_LABELS.desks_full}</p>
+        {recentIncidents && recentIncidents.length > 0 ? (
+          <div className="divide-y divide-dhl-mid-gray">
+            {(recentIncidents as unknown as IncidentRow[]).map((inc) => (
+              <div key={inc.id} className="px-5 py-3.5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-dhl-dark">
+                    {inc.location
+                      ? `Puesto ${inc.location} reportado como "${CATEGORY_LABELS[inc.category] ?? inc.category}". Acción requerida.`
+                      : `Reporte de ${CATEGORY_LABELS[inc.category] ?? inc.category}. Acción requerida.`}
+                  </p>
+                  <p className="text-xs text-dhl-gray mt-0.5">
+                    {inc.profiles?.full_name} ·{" "}
+                    {new Date(inc.created_at).toLocaleDateString("es-CL", {
+                      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+                <span className="text-xs bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-full flex-shrink-0">
+                  Abierto
+                </span>
               </div>
-              <div className={`rounded-xl border px-3 py-2 text-center ${parkingFullCount > 0 ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-200"}`}>
-                <p className={`text-xl font-bold ${parkingFullCount > 0 ? "text-red-600" : "text-dhl-gray"}`}>{parkingFullCount}</p>
-                <p className="text-[10px] text-dhl-gray">{WORST_CASE_LABELS.parking_full}</p>
-              </div>
-            </div>
-            <p className="text-xs text-dhl-gray mt-2">Usuarios que encontraron capacidad completa</p>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="px-5 py-10 text-center">
+            <p className="text-3xl mb-3">✅</p>
+            <p className="text-sm text-dhl-gray">Sin incidentes abiertos. Oficina en orden.</p>
+          </div>
+        )}
       </div>
 
       {/* Top Riffs */}
       {topUsers.length > 0 && (
-        <div className="bg-white rounded-2xl border border-dhl-mid-gray shadow-sm overflow-hidden mb-6">
-          <div className="bg-dhl-yellow px-4 py-3">
-            <h2 className="text-dhl-dark font-bold text-sm">Rockstar Path — Top Riffs</h2>
+        <div className="bg-white rounded-2xl border border-dhl-mid-gray shadow-sm overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between border-b border-dhl-mid-gray">
+            <h2 className="font-bold text-dhl-dark">🎸 Rockstar Path — Top esta semana</h2>
+            <Link href="/admin/rockstar" className="text-xs text-dhl-gray hover:text-dhl-dark transition-colors">
+              Ver ranking completo →
+            </Link>
           </div>
           <div className="divide-y divide-dhl-mid-gray">
-            {topUsers.map(([, data], i) => (
-              <div key={i} className="px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-dhl-gray w-5">{i + 1}</span>
-                  <p className="text-sm font-medium text-dhl-dark">{data.name}</p>
+            {topUsers.map(([userId, data], i) => (
+              <div key={userId} className="px-5 py-3.5 flex items-center gap-4">
+                <span className={`text-sm font-black w-6 text-center ${i === 0 ? "text-dhl-yellow" : "text-dhl-gray/50"}`}>
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-dhl-dark truncate">{data.name}</p>
+                  <p className="text-xs text-dhl-gray">{ROLE_LABELS[data.role] ?? data.role}</p>
                 </div>
                 <span className="text-sm font-bold text-dhl-dark">{data.total.toLocaleString("es-CL")} Riffs</span>
               </div>
@@ -167,45 +353,6 @@ export default async function AdminDashboard() {
           </div>
         </div>
       )}
-
-      {/* Recent Incidents */}
-      <div className="bg-white rounded-2xl border border-dhl-mid-gray shadow-sm overflow-hidden">
-        <div className="bg-dhl-yellow px-4 py-3">
-          <h2 className="text-dhl-dark font-bold text-sm">Incidentes abiertos para Office Manager</h2>
-        </div>
-        {recentIncidents && recentIncidents.length > 0 ? (
-          <div className="divide-y divide-dhl-mid-gray">
-            {recentIncidents.map((inc) => (
-              <div key={inc.id} className="px-4 py-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-dhl-gray uppercase">
-                        {CATEGORY_LABELS[inc.category] ?? inc.category}
-                      </span>
-                      {inc.location && (
-                        <span className="text-xs text-dhl-gray">— {inc.location}</span>
-                      )}
-                    </div>
-                    <p className="text-sm text-dhl-dark mt-0.5">{inc.description}</p>
-                    <p className="text-xs text-dhl-gray mt-1">
-                      Reportado por{" "}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {(inc as any).profiles?.full_name} •{" "}
-                      {new Date(inc.created_at).toLocaleDateString("es-CL")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="px-4 py-8 text-center text-dhl-gray text-sm flex flex-col items-center gap-2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-green-400" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-            No hay incidentes abiertos
-          </div>
-        )}
-      </div>
     </div>
   );
 }
