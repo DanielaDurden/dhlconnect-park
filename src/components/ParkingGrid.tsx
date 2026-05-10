@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ParkingSpotWithReservation, Profile } from "@/types";
+import { PARKING_MANAGED_COUNT, PARKING_PLAN_B } from "@/lib/config";
 
 interface Props {
   spots: ParkingSpotWithReservation[];
@@ -69,7 +70,13 @@ export default function ParkingGrid({
   const [selected, setSelected] = useState<ParkingSpotWithReservation | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [pendingCancel, setPendingCancel] = useState(false);
   const router = useRouter();
+
+  function closeSheet() {
+    setSelected(null);
+    setPendingCancel(false);
+  }
 
   const spotMap = Object.fromEntries(spots.map((s) => [s.spot_number, s]));
   const hasReservation = !!myReservationId;
@@ -206,7 +213,7 @@ export default function ParkingGrid({
     return (
       <div
         className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center"
-        onClick={() => setSelected(null)}
+        onClick={closeSheet}
       >
         <div
           className="bg-white rounded-t-2xl w-full max-w-lg p-6 shadow-xl"
@@ -218,7 +225,7 @@ export default function ParkingGrid({
               <p className="text-dhl-gray text-sm">Nivel -2</p>
             </div>
             <button
-              onClick={() => setSelected(null)}
+              onClick={closeSheet}
               aria-label="Cerrar"
               className="w-8 h-8 rounded-full bg-dhl-light-gray flex items-center justify-center text-dhl-gray hover:text-dhl-dark"
             >
@@ -286,14 +293,29 @@ export default function ParkingGrid({
           )}
 
           <div className="space-y-3">
-            {state === "mine" && (
+            {state === "mine" && !pendingCancel && (
               <button
-                onClick={handleCancel}
+                onClick={() => setPendingCancel(true)}
                 disabled={loading}
                 className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60"
               >
-                {loading ? "Cancelando..." : "Cancelar reserva"}
+                Cancelar reserva
               </button>
+            )}
+            {state === "mine" && pendingCancel && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 space-y-2">
+                <p className="text-sm font-semibold text-red-700 text-center">¿Confirmas cancelar tu reserva?</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setPendingCancel(false)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700">
+                    No, volver
+                  </button>
+                  <button onClick={handleCancel} disabled={loading}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-500 text-white disabled:opacity-60">
+                    {loading ? "..." : "Sí, cancelar"}
+                  </button>
+                </div>
+              </div>
             )}
 
             {(state === "available") && !hasReservation && (
@@ -367,29 +389,28 @@ export default function ParkingGrid({
             <div>
               <p className="text-sm font-bold text-red-700">Estacionamiento completo — Plan B</p>
               <p className="text-xs text-red-600 mt-0.5">
-                Los 20 espacios gestionados están ocupados hoy.
+                Los {PARKING_MANAGED_COUNT} espacios gestionados están ocupados hoy.
               </p>
             </div>
           </div>
           <div className="space-y-2">
-            <div className="bg-white border border-red-200 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true">
-                <path d="M19 17H5v-6l2.5-6H16.5L19 11v6Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
-              </svg>
-              <div>
-                <p className="text-xs font-semibold text-dhl-dark">ParkUp — Edificio adyacente</p>
-                <p className="text-xs text-dhl-gray">Guarda boleta para reembolso con RRHH</p>
+            {PARKING_PLAN_B.map((option) => (
+              <div key={option.name} className="bg-white border border-red-200 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
+                {option.icon === "car" ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true">
+                    <path d="M19 17H5v-6l2.5-6H16.5L19 11v6Z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                )}
+                <div>
+                  <p className="text-xs font-semibold text-dhl-dark">{option.name}</p>
+                  <p className="text-xs text-dhl-gray">{option.detail}</p>
+                </div>
               </div>
-            </div>
-            <div className="bg-white border border-red-200 rounded-xl px-3 py-2.5 flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true">
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
-              </svg>
-              <div>
-                <p className="text-xs font-semibold text-dhl-dark">Estacionamiento Público</p>
-                <p className="text-xs text-dhl-gray">Av. del Parque 4023</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

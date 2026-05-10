@@ -50,7 +50,13 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [carpooling, setCarpooling] = useState(false);
+  const [pendingCancel, setPendingCancel] = useState(false);
   const router = useRouter();
+
+  function closeSheet() {
+    setSelected(null);
+    setPendingCancel(false);
+  }
 
   const deskMap = Object.fromEntries(desks.map((d) => [d.code, d]));
   const hasReservation = !!myReservationId;
@@ -249,7 +255,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
     return (
       <div
         className="fixed inset-0 bg-black/50 z-[60] flex items-end justify-center"
-        onClick={() => setSelected(null)}
+        onClick={closeSheet}
       >
         <div
           className="bg-white rounded-t-2xl w-full max-w-lg shadow-xl overflow-hidden"
@@ -264,7 +270,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
               <h3 className="text-xl font-bold mt-0.5">Puesto {selected.code}</h3>
               <p className="text-sm font-semibold mt-0.5">{style.label}</p>
             </div>
-            <button onClick={() => setSelected(null)} aria-label="Cerrar"
+            <button onClick={closeSheet} aria-label="Cerrar"
               className="w-9 h-9 rounded-full bg-black/10 flex items-center justify-center flex-shrink-0">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -349,11 +355,26 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
               </button>
             )}
 
-            {isMyCheckedIn && (
-              <button onClick={handleCancel} disabled={loading}
+            {isMyCheckedIn && !pendingCancel && (
+              <button onClick={() => setPendingCancel(true)} disabled={loading}
                 className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60">
-                {loading ? "Cancelando..." : "Cancelar reserva"}
+                Cancelar reserva
               </button>
+            )}
+            {isMyCheckedIn && pendingCancel && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 space-y-2">
+                <p className="text-sm font-semibold text-red-700 text-center">¿Confirmas cancelar tu reserva?</p>
+                <div className="flex gap-2">
+                  <button onClick={() => setPendingCancel(false)}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-gray-100 text-gray-700">
+                    No, volver
+                  </button>
+                  <button onClick={handleCancel} disabled={loading}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold bg-red-500 text-white disabled:opacity-60">
+                    {loading ? "..." : "Sí, cancelar"}
+                  </button>
+                </div>
+              </div>
             )}
 
             {canBook && (

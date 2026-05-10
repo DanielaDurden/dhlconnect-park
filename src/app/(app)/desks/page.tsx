@@ -26,24 +26,11 @@ export default async function DesksPage() {
     { data: dayStatuses },
     { data: todaySchedule },
   ] = await Promise.all([
-    admin.from("desks").select("*").eq("is_active", true).order("grid_row").order("grid_col"),
+    admin.from("desks").select("*, assigned_profile:profiles!assigned_user_id(id, full_name, area)").eq("is_active", true).order("grid_row").order("grid_col"),
     admin.from("desk_reservations").select("*, profiles!inner(full_name, area)").eq("date", today).eq("status", "confirmed"),
     admin.from("user_day_status").select("user_id, status").eq("date", today),
     admin.from("area_desk_schedule").select("area, desk_count").eq("day_of_week", new Date().getDay()),
   ]);
-
-
-  // Get assigned user profiles for fixed desks
-  const assignedUserIds = (desks ?? [])
-    .map((d) => d.assigned_user_id)
-    .filter(Boolean) as string[];
-
-  const { data: assignedProfiles } = assignedUserIds.length
-    ? await admin
-        .from("profiles")
-        .select("id, full_name, area")
-        .in("id", assignedUserIds)
-    : { data: [] };
 
   // Build maps
   const reservationByDesk = Object.fromEntries(
@@ -52,17 +39,11 @@ export default async function DesksPage() {
   const statusByUser = Object.fromEntries(
     (dayStatuses ?? []).map((s) => [s.user_id, s.status])
   );
-  const profileById = Object.fromEntries(
-    (assignedProfiles ?? []).map((p) => [p.id, p])
-  );
 
-  // Enrich desks with status info
+  // Enrich desks with status info — assigned_profile comes from the join above
   const enrichedDesks: DeskWithStatus[] = (desks ?? []).map((desk) => ({
     ...desk,
     reservation: reservationByDesk[desk.id] ?? null,
-    assigned_profile: desk.assigned_user_id
-      ? profileById[desk.assigned_user_id] ?? null
-      : null,
     owner_day_status: desk.assigned_user_id
       ? (statusByUser[desk.assigned_user_id] ?? null)
       : null,

@@ -77,9 +77,11 @@ export default async function HomePage() {
   const total = totalDesksCount ?? 0;
   const availableDesksCount = Math.max(0, total - occupied);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const deskCode = (deskReservationToday as any)?.desks?.code as string | undefined;
-  const reservationId = deskReservationToday?.id as string | undefined;
+  type DeskResWithJoin = { id: string; desk_id: string; checked_in: boolean; carpooling: boolean | null; status: string; desks: { code: string } | null };
+  type ParkingResWithJoin = { id: string; spot_id: string; parking_spots: { spot_number: number; level: string } | null };
+
+  const deskCode = (deskReservationToday as DeskResWithJoin | null)?.desks?.code;
+  const reservationId = deskReservationToday?.id;
 
   let dailyActionCompleted: boolean;
   if (role === "executive") {
@@ -113,10 +115,8 @@ export default async function HomePage() {
     parkingResToday: parkingResToday
       ? {
           id: parkingResToday.id,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          spotNumber: (parkingResToday as any).parking_spots?.spot_number as number | undefined,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          level: (parkingResToday as any).parking_spots?.level as string | undefined,
+          spotNumber: (parkingResToday as unknown as ParkingResWithJoin).parking_spots?.spot_number,
+          level: (parkingResToday as unknown as ParkingResWithJoin).parking_spots?.level,
         }
       : null,
     weeklyPlanToday: weeklyPlanToday

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 type CardState =
@@ -44,11 +44,23 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
   const [cameByAuto, setCameByAuto] = useState<boolean | null>(null);
   const [didCarpooling, setDidCarpooling] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
+  const autoReleaseRef = useRef(false);
+
+  function releaseReservation() {
+    if (!reservation?.id || autoReleaseRef.current) return;
+    autoReleaseRef.current = true;
+    fetch("/api/desks/reserve", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reservation_id: reservation.id }),
+    });
+  }
 
   // Derive time-based state client-side only (avoids SSR hydration mismatch)
   useEffect(() => {
     const now = new Date();
     if (isAfterCutoff(now)) {
+      releaseReservation();
       setState("auto_released");
       return;
     }
@@ -60,11 +72,13 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
       const m = getMinutesUntilNine(new Date());
       setMinutesLeft(m);
       if (m <= 0) {
+        releaseReservation();
         setState("auto_released");
         clearInterval(id);
       }
     }, 30000);
     return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleYesComing() {
