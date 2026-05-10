@@ -84,13 +84,16 @@ export default function ExecutiveHome({
           <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">🟢 LIBERADA HOY</p>
           <p className="text-xl font-black text-green-900 mt-1">CoWork Premium activo</p>
           <p className="text-sm text-green-700/70 mt-1">Tu espacio está disponible para el equipo.</p>
-          <button
-            onClick={handleRecover}
-            disabled={recovering}
-            className="mt-3 text-xs text-red-500 underline disabled:opacity-50"
-          >
-            {recovering ? "Recuperando..." : "Recuperar"}
-          </button>
+          <div className="mt-4 pt-4 border-t border-green-200">
+            <button
+              onClick={handleRecover}
+              disabled={recovering}
+              className="w-full flex items-center justify-center gap-2 bg-white border-2 border-red-200 text-red-600 font-bold py-2.5 rounded-2xl text-sm hover:bg-red-50 transition-colors disabled:opacity-50"
+            >
+              🚩 {recovering ? "Reclamando..." : "Reclamar mi base"}
+            </button>
+            <p className="text-[10px] text-green-700/50 text-center mt-1.5">Uso exclusivo para emergencias o falta de reserva</p>
+          </div>
         </div>
       ) : (
         <div className="bg-gradient-to-br from-dhl-yellow/20 to-dhl-yellow/5 rounded-3xl p-5 shadow-sm">
