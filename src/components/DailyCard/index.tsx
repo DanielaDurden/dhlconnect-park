@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { UserRole } from "@/types";
 import ExecutiveCard from "./ExecutiveCard";
 import ProfessionalCard from "./ProfessionalCard";
@@ -44,8 +45,11 @@ export default function DailyCard(props: DailyCardProps) {
     router.refresh();
   }
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+  const [greeting, setGreeting] = useState("");
+  useEffect(() => {
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches");
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-56px)] bg-gradient-to-b from-[#FFCD05]/30 via-white to-white flex flex-col items-center justify-center px-5 py-10">

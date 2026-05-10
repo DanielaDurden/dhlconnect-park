@@ -37,23 +37,23 @@ function isAfterCutoff(now: Date): boolean {
 
 export default function ProfessionalCard({ firstName, deskCode, reservation, onComplete }: Props) {
   const router = useRouter();
-  const now = new Date();
-  const afterCutoff = isAfterCutoff(now);
 
-  function deriveInitialState(): CardState {
-    if (afterCutoff) return "auto_released";
-    return "pending_early";
-  }
-
-  const [state, setState] = useState<CardState>(deriveInitialState);
-  const [minutesLeft, setMinutesLeft] = useState(() => getMinutesUntilNine(new Date()));
+  // Start with safe SSR default — useEffect corrects after hydration
+  const [state, setState] = useState<CardState>("pending_early");
+  const [minutesLeft, setMinutesLeft] = useState(60);
   const [cameByAuto, setCameByAuto] = useState<boolean | null>(null);
   const [didCarpooling, setDidCarpooling] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Derive time-based state client-side only (avoids SSR hydration mismatch)
   useEffect(() => {
-    if (state !== "pending_early") return;
-    const mins = getMinutesUntilNine(new Date());
+    const now = new Date();
+    if (isAfterCutoff(now)) {
+      setState("auto_released");
+      return;
+    }
+    const mins = getMinutesUntilNine(now);
+    setMinutesLeft(mins);
     if (mins > 60) return;
 
     const id = setInterval(() => {
@@ -65,7 +65,7 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
       }
     }, 30000);
     return () => clearInterval(id);
-  }, [state]);
+  }, []);
 
   async function handleYesComing() {
     setState("checkin_form");
