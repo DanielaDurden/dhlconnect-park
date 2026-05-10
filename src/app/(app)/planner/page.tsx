@@ -56,15 +56,11 @@ export default async function PlannerPage() {
       <div className="mb-5">
         <h1 className="text-xl font-bold text-dhl-dark">📅 Diseña tu semana</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
-          {isWeekend
-            ? "Proyecta tus días en la oficina para asegurar tu base y parking."
-            : "Proyecta tus días en la oficina para asegurar tu base y parking."}
+          Proyecta tus días en la oficina para asegurar tu base y parking.
         </p>
-        {isWeekend && (
-          <span className="inline-block mt-1.5 text-[10px] font-bold bg-dhl-yellow/30 text-dhl-dark px-2 py-0.5 rounded-full uppercase tracking-wide">
-            Próxima semana
-          </span>
-        )}
+        <span className="inline-block mt-1.5 text-[10px] font-bold bg-dhl-yellow/30 text-dhl-dark px-2 py-0.5 rounded-full uppercase tracking-wide">
+          {isWeekend ? "Próxima semana" : "Tu semana"}
+        </span>
       </div>
 
       <div className="bg-dhl-yellow/10 border border-dhl-yellow rounded-xl px-4 py-3 mb-5 flex items-start gap-3">
