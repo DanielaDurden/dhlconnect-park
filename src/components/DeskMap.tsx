@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { DeskWithStatus, Profile, UserRole } from "@/types";
+import { FLOOR_CANVAS, DESK_POSITIONS, ROOM_BOXES, GROUP_BORDERS, ZONE_LABELS } from "@/lib/floorPlan";
 
 interface Props {
   desks: DeskWithStatus[];
@@ -512,59 +513,29 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
         </div>
 
         <div className="overflow-x-auto p-3">
-          <div className="relative rounded-xl bg-gray-50" style={{ width: 548, height: 636 }}>
+          <div className="relative rounded-xl bg-gray-50" style={{ width: FLOOR_CANVAS.width, height: FLOOR_CANVAS.height }}>
 
-            <span className="absolute text-[8px] font-bold text-dhl-gray/50 uppercase tracking-widest" style={{ left: 72, top: 12 }}>Zona A</span>
-            <span className="absolute text-[8px] font-bold text-dhl-gray/50 uppercase tracking-widest" style={{ left: 72, top: 92 }}>Zona B</span>
-            <span className="absolute text-[8px] font-bold text-dhl-gray/50 uppercase tracking-widest" style={{ left: 248, top: 92 }}>Zona C</span>
+            {ZONE_LABELS.map((z) => (
+              <span
+                key={z.text}
+                className="absolute text-[8px] font-bold text-dhl-gray/50 uppercase tracking-widest"
+                style={{ left: z.x, top: z.y }}
+              >
+                {z.text}
+              </span>
+            ))}
 
-            {/* ZONA A */}
-            <FloorDesk code="A01" x={72}  y={24} />
-            <FloorDesk code="A02" x={130} y={24} />
-            <FloorDesk code="A03" x={188} y={24} />
-            <FloorDesk code="A04" x={246} y={24} />
-            <FloorDesk code="A05" x={304} y={24} />
-            <FloorDesk code="A06" x={362} y={24} />
-            <RoomBox label="Oficina OE" x={424} y={24} w={116} h={44} />
+            {ROOM_BOXES.map((room) => (
+              <RoomBox key={room.label} {...room} />
+            ))}
 
-            <RoomBox label="HR"   x={4} y={108} />
-            <RoomBox label="FIN"  x={4} y={162} />
-            <RoomBox label="BD"   x={4} y={240} />
-            <RoomBox label="SD"   x={4} y={294} />
-            <RoomBox label="OE"   x={4} y={372} />
-            <RoomBox label="Sala" x={4} y={426} />
-            <RoomBox label="Ops"  x={4} y={498} muted />
-            <RoomBox label="GG"   x={4} y={554} />
+            {GROUP_BORDERS.map((b, i) => (
+              <GroupBorder key={i} {...b} />
+            ))}
 
-            {/* ZONA B */}
-            <GroupBorder x={68} y={104} w={120} h={112} />
-            <FloorDesk code="B01" x={72}  y={108} />
-            <FloorDesk code="B02" x={130} y={108} />
-            <FloorDesk code="B03" x={72}  y={162} />
-            <FloorDesk code="B04" x={130} y={162} />
-
-            <GroupBorder x={68} y={236} w={120} h={112} />
-            <FloorDesk code="B05" x={72}  y={240} />
-            <FloorDesk code="B06" x={130} y={240} />
-            <FloorDesk code="B07" x={72}  y={294} />
-            <FloorDesk code="B08" x={130} y={294} />
-
-            <GroupBorder x={68} y={368} w={120} h={112} />
-            <FloorDesk code="B09" x={72}  y={372} />
-            <FloorDesk code="B10" x={130} y={372} />
-            <FloorDesk code="B11" x={72}  y={426} />
-            <FloorDesk code="B12" x={130} y={426} />
-
-            {/* ZONA C */}
-            <FloorDesk code="C01" x={248} y={108} />
-            <FloorDesk code="C02" x={306} y={108} />
-            <FloorDesk code="C03" x={364} y={108} />
-            <FloorDesk code="C04" x={248} y={162} />
-            <FloorDesk code="C05" x={306} y={162} />
-            <FloorDesk code="C06" x={364} y={162} />
-
-            <FloorDesk code="GG01" x={100} y={498} />
-            <RoomBox label="Sala de Reunión" x={72} y={560} w={248} h={48} />
+            {Object.entries(DESK_POSITIONS).map(([code, pos]) => (
+              <FloorDesk key={code} code={code} x={pos.x} y={pos.y} />
+            ))}
           </div>
         </div>
       </div>
