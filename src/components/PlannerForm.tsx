@@ -122,18 +122,25 @@ export default function PlannerForm({ weekStart, weekDates, initialPlans }: Prop
                 >
                   {loading === dayOfWeek ? "..." : "🏢 Voy a la oficina"}
                 </button>
-                <button
-                  onClick={() => savePlan(dayOfWeek, false)}
-                  disabled={loading === dayOfWeek}
-                  className={`w-full py-3 rounded-xl text-sm font-bold border-2 transition-all disabled:opacity-50 ${
-                    isReleased
-                      ? "bg-dhl-yellow text-dhl-dark border-dhl-yellow"
-                      : "bg-white text-dhl-dark border-dhl-mid-gray hover:border-dhl-yellow"
-                  }`}
-                >
-                  {loading === dayOfWeek ? "..." : "🎸 Comparto mi espacio"}
-                  {isReleased && <span className="ml-1.5 text-[10px] font-normal opacity-70">+50 Riffs</span>}
-                </button>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => savePlan(dayOfWeek, false)}
+                    disabled={loading === dayOfWeek}
+                    className={`w-full py-3 rounded-xl text-sm font-bold border-2 transition-all disabled:opacity-50 ${
+                      isReleased
+                        ? "bg-dhl-yellow text-dhl-dark border-dhl-yellow"
+                        : "bg-white text-dhl-dark border-dhl-mid-gray hover:border-dhl-yellow"
+                    }`}
+                  >
+                    {loading === dayOfWeek ? "..." : "🎸 Comparto mi espacio"}
+                    {isReleased && <span className="ml-1.5 text-[10px] font-normal opacity-70">+50 Riffs · CoWork Premium activo</span>}
+                  </button>
+                  {!isReleased && (
+                    <p className="text-[10px] text-dhl-gray/60 text-center">
+                      El equipo vive CoWork Premium · Tú ganas +50 Riffs
+                    </p>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="px-4 py-3">

@@ -54,9 +54,11 @@ export default async function PlannerPage() {
   return (
     <div className="px-4 py-5">
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-dhl-dark">Planificador Semanal</h1>
+        <h1 className="text-xl font-bold text-dhl-dark">📅 Diseña tu semana</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
-          {isWeekend ? "Planifica tu próxima semana" : "Proyecta tu semana y libera tu espacio solidariamente"}
+          {isWeekend
+            ? "Proyecta tus días en la oficina para asegurar tu base y parking."
+            : "Proyecta tus días en la oficina para asegurar tu base y parking."}
         </p>
         {isWeekend && (
           <span className="inline-block mt-1.5 text-[10px] font-bold bg-dhl-yellow/30 text-dhl-dark px-2 py-0.5 rounded-full uppercase tracking-wide">
@@ -70,7 +72,7 @@ export default async function PlannerPage() {
           <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
         </svg>
         <p className="text-xs text-dhl-dark">
-          Liberar tu espacio solidariamente cuando no vengas suma <strong>+50 Riffs</strong> y ayuda a tus colegas a planificar mejor su semana.
+          ¿No vienes? <strong>Comparte tu escenario 🎸</strong> — al liberar tu oficina, el equipo vive una experiencia <strong>CoWork Premium</strong>. Ganas <strong>+50 Riffs</strong> por tu generosidad.
         </p>
       </div>
 
