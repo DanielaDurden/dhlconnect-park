@@ -83,8 +83,13 @@ export default async function HomePage() {
   const deskCode = (deskReservationToday as DeskResWithJoin | null)?.desks?.code;
   const reservationId = deskReservationToday?.id;
 
+  const isWeekend = rawDay === 0 || rawDay === 6;
+
   let dailyActionCompleted: boolean;
-  if (role === "executive") {
+  if (isWeekend) {
+    // No action needed on weekends — planner only covers Mon–Fri
+    dailyActionCompleted = true;
+  } else if (role === "executive") {
     dailyActionCompleted = !!weeklyPlanToday;
   } else if (role === "professional") {
     // Card shows until: checked in OR explicitly released (cancelled) today
