@@ -17,8 +17,6 @@ export default async function HomePage() {
   const rawDay = now.getDay();
   const dayOfWeek = rawDay === 0 ? 7 : rawDay;
 
-  const firstOfMonth = today.slice(0, 7) + "-01";
-
   // On weekends show next week's plans in the executive widget (mirrors planner logic)
   const widgetWeekStart = (rawDay === 0 || rawDay === 6)
     ? getWeekStart(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000))
