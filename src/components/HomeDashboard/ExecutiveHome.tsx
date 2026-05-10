@@ -119,7 +119,6 @@ export default function ExecutiveHome({
               {DAY_LABELS.map((label, i) => {
                 const plan = weeklyPlansWeek.find((p) => p.day_of_week === i + 1);
                 const isReleased = plan?.solidarity_released;
-                const hasOffice = plan?.planned_status === "office" && !isReleased;
                 return (
                   <div key={label} className="flex flex-col items-center gap-1">
                     <span className="text-[10px] text-dhl-gray/60 font-semibold">{label}</span>
