@@ -24,7 +24,7 @@ function isPastCutoff(): boolean {
 
 type DeskState = "mine" | "checkedin" | "cowork" | "available" | "pending" | "occupied" | "disabled";
 
-function getDeskState(desk: DeskWithStatus, myId: string): DeskState {
+function getDeskState(desk: DeskWithStatus, myId: string, pastCutoff: boolean): DeskState {
   if (DISABLED_CODES.has(desk.code)) return "disabled";
   const reserved = desk.reservation?.status === "confirmed";
   if (desk.type === "cowork") return reserved ? "occupied" : "cowork";
@@ -33,7 +33,7 @@ function getDeskState(desk: DeskWithStatus, myId: string): DeskState {
     return reserved && desk.reservation?.user_id === myId ? "checkedin" : "mine";
   }
   if (reserved) return "occupied";
-  return isPastCutoff() ? "available" : "pending";
+  return pastCutoff ? "available" : "pending";
 }
 
 const STATE_STYLE: Record<DeskState, { bg: string; label: string; icon: string }> = {
@@ -52,7 +52,13 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
   const [toast, setToast] = useState<string | null>(null);
   const [carpooling, setCarpooling] = useState(false);
   const [pendingCancel, setPendingCancel] = useState(false);
+  // Safe SSR default — useEffect corrects after hydration to avoid SSR/client mismatch
+  const [past901, setPast901] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setPast901(isPastCutoff());
+  }, []);
 
   function closeSheet() {
     setSelected(null);
@@ -61,14 +67,13 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
 
   const deskMap = Object.fromEntries(desks.map((d) => [d.code, d]));
   const hasReservation = !!myReservationId;
-  const past901 = isPastCutoff();
   const isGuest = myRole === "guest";
   const isExecutive = myRole === "executive";
 
-  const coworkAvail  = desks.filter((d) => getDeskState(d, myProfile.id) === "cowork").length;
-  const released     = desks.filter((d) => getDeskState(d, myProfile.id) === "available" && d.assigned_user_id).length;
-  const pendingCount = desks.filter((d) => getDeskState(d, myProfile.id) === "pending").length;
-  const totalFree    = desks.filter((d) => ["cowork","available"].includes(getDeskState(d, myProfile.id))).length;
+  const coworkAvail  = desks.filter((d) => getDeskState(d, myProfile.id, past901) === "cowork").length;
+  const released     = desks.filter((d) => getDeskState(d, myProfile.id, past901) === "available" && d.assigned_user_id).length;
+  const pendingCount = desks.filter((d) => getDeskState(d, myProfile.id, past901) === "pending").length;
+  const totalFree    = desks.filter((d) => ["cowork","available"].includes(getDeskState(d, myProfile.id, past901))).length;
   const isWorstCase  = !hasReservation && totalFree === 0 && past901;
 
   // Log worst-case once when the condition first becomes true
@@ -184,7 +189,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
       );
     }
 
-    const state = getDeskState(desk, myProfile.id);
+    const state = getDeskState(desk, myProfile.id, past901);
     const style = STATE_STYLE[state];
     const isSelected = selected?.id === desk.id;
 
@@ -243,7 +248,7 @@ export default function DeskMap({ desks, myProfile, today, myReservationId, myRo
 
   function BottomSheet() {
     if (!selected) return null;
-    const state = getDeskState(selected, myProfile.id);
+    const state = getDeskState(selected, myProfile.id, past901);
     const style = STATE_STYLE[state];
 
     // Guests can only book cowork

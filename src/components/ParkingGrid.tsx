@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { ParkingSpotWithReservation, Profile } from "@/types";
 import { PARKING_MANAGED_COUNT, PARKING_PLAN_B } from "@/lib/config";
@@ -28,7 +28,8 @@ type SpotState = "mine" | "available" | "pending" | "assigned" | "high_freq" | "
 function getSpotState(
   spot: ParkingSpotWithReservation,
   myId: string,
-  isMonday: boolean
+  isMonday: boolean,
+  pastCutoff: boolean
 ): SpotState {
   if (!spot.is_active || spot.spot_status === "blocked") return "disabled";
   if (spot.reservation?.user_id === myId) return "mine";
@@ -36,7 +37,7 @@ function getSpotState(
   if (spot.spot_status === "high_frequency") return "high_freq";
   if (spot.spot_status === "fixed") return "assigned";
   if (spot.spot_status === "director_reserved") {
-    if (isMonday && !isPastCutoff()) return "pending";
+    if (isMonday && !pastCutoff) return "pending";
     return "available";
   }
   return "available";
@@ -71,7 +72,13 @@ export default function ParkingGrid({
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [pendingCancel, setPendingCancel] = useState(false);
+  // Safe SSR default — corrected after hydration
+  const [past930, setPast930] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setPast930(isPastCutoff());
+  }, []);
 
   function closeSheet() {
     setSelected(null);
@@ -80,7 +87,6 @@ export default function ParkingGrid({
 
   const spotMap = Object.fromEntries(spots.map((s) => [s.spot_number, s]));
   const hasReservation = !!myReservationId;
-  const past930 = isPastCutoff();
   const availableCount = totalCapacity - occupiedCount;
   const isPlanB = availableCount === 0;
 
@@ -137,7 +143,7 @@ export default function ParkingGrid({
       );
     }
 
-    const state = getSpotState(spot, myProfile.id, isMonday);
+    const state = getSpotState(spot, myProfile.id, isMonday, past930);
     const color = STATE_COLORS[state];
     const label = getSpotLabel(spot, state);
     const isSelected = selected?.id === spot.id;
@@ -208,7 +214,7 @@ export default function ParkingGrid({
 
   function BottomSheet() {
     if (!selected) return null;
-    const state = getSpotState(selected, myProfile.id, isMonday);
+    const state = getSpotState(selected, myProfile.id, isMonday, past930);
 
     return (
       <div
