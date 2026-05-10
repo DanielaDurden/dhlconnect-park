@@ -34,6 +34,7 @@ interface HomeDashboardProps {
   riffsNext: number;
   solidarityCount: number;
   availableDesksCount: number;
+  weeklyPlansWeek: { day_of_week: number; planned_status: string; solidarity_released: boolean }[];
 }
 
 function WeekendBanner({ firstName }: { firstName: string }) {

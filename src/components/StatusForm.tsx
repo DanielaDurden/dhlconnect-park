@@ -14,6 +14,7 @@ interface TeamStatus {
 
 interface Props {
   profile: Pick<Profile, "id" | "full_name" | "area">;
+  role?: string;
   weekDates: string[];
   myStatuses: UserDayStatus[];
   teamStatuses: TeamStatus[];
@@ -92,7 +93,7 @@ function getDayName(dateStr: string): { full: string } {
   };
 }
 
-export default function StatusForm({ profile, weekDates, myStatuses, teamStatuses, today }: Props) {
+export default function StatusForm({ profile, role, weekDates, myStatuses, teamStatuses, today }: Props) {
   const [saving, setSaving] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [localStatuses, setLocalStatuses] = useState<Record<string, DayStatus>>(
@@ -214,8 +215,8 @@ export default function StatusForm({ profile, weekDates, myStatuses, teamStatuse
         </div>
       </div>
 
-      {/* Team Status Today */}
-      <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
+      {/* Team Status Today — hidden for executives */}
+      {role !== "executive" && <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
         <div className="bg-dhl-dark px-4 py-3">
           <h2 className="text-white font-bold text-sm">
             Ritmo del equipo — hoy
@@ -255,7 +256,7 @@ export default function StatusForm({ profile, weekDates, myStatuses, teamStatuse
             </p>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

@@ -12,7 +12,7 @@ export default async function StatusPage() {
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("id, full_name, area")
+    .select("id, full_name, area, role")
     .eq("id", user!.id)
     .single();
 
@@ -50,6 +50,7 @@ export default async function StatusPage() {
 
       <StatusForm
         profile={profile!}
+        role={profile?.role ?? "professional"}
         weekDates={weekDates}
         myStatuses={statuses ?? []}
         teamStatuses={teamStatuses ?? []}

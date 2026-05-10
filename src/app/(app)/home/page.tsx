@@ -19,11 +19,17 @@ export default async function HomePage() {
 
   const firstOfMonth = today.slice(0, 7) + "-01";
 
+  // On weekends show next week's plans in the executive widget (mirrors planner logic)
+  const widgetWeekStart = (rawDay === 0 || rawDay === 6)
+    ? getWeekStart(new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000))
+    : weekStart;
+
   const [
     { data: profile },
     { data: deskReservationToday },
     { data: parkingResToday },
     { data: weeklyPlanToday },
+    { data: weeklyPlansWeek },
     { data: riffsData },
     { count: solidarityCount },
     { count: occupiedDesksCount },
@@ -50,6 +56,11 @@ export default async function HomePage() {
       .eq("week_start", weekStart)
       .eq("day_of_week", dayOfWeek)
       .maybeSingle(),
+    admin
+      .from("weekly_plans")
+      .select("day_of_week, planned_status, solidarity_released")
+      .eq("user_id", user!.id)
+      .eq("week_start", widgetWeekStart),
     admin.from("riffs_log").select("points").eq("user_id", user!.id),
     admin
       .from("riffs_log")
@@ -138,6 +149,11 @@ export default async function HomePage() {
     solidarityCount: solidarityCountVal,
     availableDesksCount,
     isWeekend,
+    weeklyPlansWeek: (weeklyPlansWeek ?? []).map((p) => ({
+      day_of_week: p.day_of_week as number,
+      planned_status: p.planned_status as string,
+      solidarity_released: p.solidarity_released as boolean,
+    })),
   };
 
   if (!dailyActionCompleted) {

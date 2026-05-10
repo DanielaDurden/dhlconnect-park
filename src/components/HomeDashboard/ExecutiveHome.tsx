@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 
 interface Props {
   firstName: string;
+  isWeekend?: boolean;
   weeklyPlanToday: {
     id: string;
     planned_status: string;
     solidarity_released: boolean;
   } | null;
+  weeklyPlansWeek: { day_of_week: number; planned_status: string; solidarity_released: boolean }[];
   totalRiffs: number;
   riffsLevel: string;
   riffsProgress: number;
@@ -18,9 +20,13 @@ interface Props {
   solidarityCount: number;
 }
 
+const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie"];
+
 export default function ExecutiveHome({
   firstName,
+  isWeekend,
   weeklyPlanToday,
+  weeklyPlansWeek,
   totalRiffs,
   riffsLevel,
   riffsProgress,
@@ -93,6 +99,44 @@ export default function ExecutiveHome({
           <p className="text-sm text-dhl-dark/60 mt-1">Tu espacio te espera hoy.</p>
         </div>
       )}
+
+      {/* Mi semana widget */}
+      <Link href="/planner">
+        <div className="bg-white rounded-3xl p-5 shadow-sm border border-dhl-mid-gray">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-black text-dhl-dark">
+              📅 {isWeekend ? "Próxima semana" : "Mi semana"}
+            </p>
+            <span className="text-[10px] text-dhl-gray font-medium">Editar →</span>
+          </div>
+          {weeklyPlansWeek.length === 0 ? (
+            <div className="text-center py-2">
+              <p className="text-sm text-dhl-gray/70">Sin planificar</p>
+              <p className="text-xs text-dhl-yellow font-bold mt-1">Toca para planificar tu semana</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-5 gap-1.5">
+              {DAY_LABELS.map((label, i) => {
+                const plan = weeklyPlansWeek.find((p) => p.day_of_week === i + 1);
+                const isReleased = plan?.solidarity_released;
+                const hasOffice = plan?.planned_status === "office" && !isReleased;
+                return (
+                  <div key={label} className="flex flex-col items-center gap-1">
+                    <span className="text-[10px] text-dhl-gray/60 font-semibold">{label}</span>
+                    <div className={`w-full rounded-xl py-2 flex items-center justify-center text-base ${
+                      !plan ? "bg-dhl-light-gray" :
+                      isReleased ? "bg-dhl-yellow/30" : "bg-dhl-dark/10"
+                    }`}>
+                      {!plan ? <span className="text-dhl-gray/30 text-xs">—</span> :
+                       isReleased ? "🎸" : "🏢"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Link>
 
       {/* Riffs card */}
       <Link href="/profile">
