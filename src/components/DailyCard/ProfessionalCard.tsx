@@ -199,7 +199,8 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
           </div>
 
           <div>
-            <p className="text-sm font-bold text-dhl-dark mb-2">¿Vienes acompañado? 🚗</p>
+            <p className="text-sm font-bold text-dhl-dark mb-0.5">¿Vienes acompañado? 🚗</p>
+            <p className="text-xs text-dhl-gray mb-2">Reporta tu ruta compartida y suma +30 Riffs a tu Rockstar Path.</p>
             <div className="flex gap-2">
               {[true, false].map((val) => (
                 <button
@@ -235,11 +236,14 @@ export default function ProfessionalCard({ firstName, deskCode, reservation, onC
     <div className="space-y-5">
       <div className="text-center">
         <p className="text-5xl mb-4">⚡</p>
-        <p className="text-2xl font-black text-dhl-dark">Hola, {firstName}.</p>
+        <p className="text-2xl font-black text-dhl-dark">¡Buen día, {firstName}!</p>
+        <p className="text-sm text-dhl-gray mt-2 leading-snug">
+          No olvides confirmar tu asistencia antes de las 09:00 AM para asegurar tu lugar de hoy.
+        </p>
         {deskCode && (
-          <p className="text-sm text-dhl-gray mt-2">
-            Tu puesto {deskCode} te espera hasta las 9:00 AM.
-          </p>
+          <span className="inline-block mt-2 text-xs font-bold text-dhl-dark bg-dhl-yellow/30 px-3 py-1 rounded-full">
+            Puesto {deskCode} reservado
+          </span>
         )}
         {showCountdown && (
           <span className="inline-block mt-2 text-sm font-bold text-amber-500 bg-amber-50 px-3 py-1.5 rounded-full">
