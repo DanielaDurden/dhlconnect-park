@@ -162,14 +162,14 @@ export default function ExecutiveHome({
         </div>
       </Link>
 
-      {/* Impacto del mes */}
+      {/* Impacto de la semana */}
       {solidarityCount > 0 && (
         <div className="bg-white rounded-3xl p-5 shadow-sm">
           <div className="flex items-start gap-3">
             <span className="text-2xl">🤝</span>
             <div>
               <p className="font-bold text-dhl-dark text-sm">
-                Este mes liberaste {solidarityCount} {solidarityCount === 1 ? "día" : "días"}.
+                Esta semana liberaste {solidarityCount} {solidarityCount === 1 ? "día" : "días"}.
               </p>
               <p className="text-xs text-dhl-gray mt-0.5">
                 Apoyaste a {solidarityCount} {solidarityCount === 1 ? "persona" : "personas"}.

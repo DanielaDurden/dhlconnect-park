@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { IncidentCategory, Profile } from "@/types";
 
@@ -75,17 +74,19 @@ export default function IncidentForm({ profile }: Props) {
 
     setLoading(true);
     setErrorMsg(null);
-    const supabase = createClient();
 
-    const { error } = await supabase.from("incidents").insert({
-      user_id: profile.id,
-      category,
-      description: description.trim(),
-      location: location || null,
-      status: "open",
+    const res = await fetch("/api/incidents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: profile.id,
+        category,
+        description: description.trim(),
+        location: location || null,
+      }),
     });
 
-    if (!error) {
+    if (res.ok) {
       setSuccess(true);
       setCategory(null);
       setDescription("");
@@ -98,6 +99,7 @@ export default function IncidentForm({ profile }: Props) {
       setErrorMsg("No se pudo enviar el reporte. Intenta de nuevo o comunícate directamente con el Office Manager.");
     }
     setLoading(false);
+
   }
 
   if (success) {
@@ -190,10 +192,6 @@ export default function IncidentForm({ profile }: Props) {
           <p className="text-sm text-dhl-red">{errorMsg}</p>
         </div>
       )}
-
-      <p className="text-center text-xs text-dhl-gray">
-        Centralizar reportes evita duplicidades y agiliza la coordinación con Aramark y Mantenimiento.
-      </p>
     </form>
   );
 }

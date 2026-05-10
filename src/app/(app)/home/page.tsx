@@ -67,7 +67,7 @@ export default async function HomePage() {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user!.id)
       .eq("action", "solidarity_release")
-      .gte("created_at", firstOfMonth),
+      .gte("created_at", weekStart),
     admin
       .from("desk_reservations")
       .select("id", { count: "exact", head: true })
