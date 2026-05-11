@@ -42,9 +42,6 @@ export default async function AdminLayout({
           </div>
           <div className="flex items-center gap-4">
             <span className="text-white/50 text-xs hidden lg:block">{profile?.full_name}</span>
-            <Link href="/home" className="text-white/70 hover:text-white text-sm transition-colors">
-              ← App
-            </Link>
             <form action={signOut}>
               <button
                 type="submit"
