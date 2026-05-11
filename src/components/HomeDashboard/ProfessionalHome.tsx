@@ -38,6 +38,12 @@ export default function ProfessionalHome({
 }: Props) {
   const router = useRouter();
   const [releasing, setReleasing] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   const hasDesk = !!deskReservationToday && deskReservationToday.checked_in;
   const cameByAuto = deskReservationToday?.carpooling === true;
@@ -45,17 +51,29 @@ export default function ProfessionalHome({
   async function handleRelease() {
     if (!deskReservationToday?.id) return;
     setReleasing(true);
-    await fetch("/api/desks/release", {
+    const res = await fetch("/api/desks/release", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reservation_id: deskReservationToday.id, solidarity: false }),
     });
     setReleasing(false);
-    router.refresh();
+    if (res.ok) {
+      showToast("Puesto liberado correctamente.");
+      router.refresh();
+    } else {
+      showToast("Error al liberar. Intenta de nuevo.");
+    }
   }
 
   return (
     <div className="px-5 py-6 space-y-5">
+      {toast && (
+        <div className="fixed top-16 left-0 right-0 mx-4 z-50 pointer-events-none">
+          <div className="bg-dhl-dark text-white text-sm rounded-xl px-4 py-3 shadow-xl max-w-lg mx-auto text-center">
+            {toast}
+          </div>
+        </div>
+      )}
       {/* Hero section */}
       <div>
         <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">Bienvenid@</p>

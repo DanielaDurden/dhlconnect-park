@@ -35,7 +35,13 @@ export default function ExecutiveHome({
 }: Props) {
   const router = useRouter();
   const [recovering, setRecovering] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [greeting, setGreeting] = useState("");
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
   useEffect(() => {
     const h = new Date().getHours();
     setGreeting(h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches");
@@ -53,7 +59,7 @@ export default function ExecutiveHome({
     d.setDate(diff);
     const weekStart = d.toISOString().split("T")[0];
 
-    await fetch("/api/planner", {
+    const res = await fetch("/api/planner", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -64,11 +70,23 @@ export default function ExecutiveHome({
       }),
     });
     setRecovering(false);
-    router.refresh();
+    if (res.ok) {
+      showToast("Tu espacio ha sido reclamado.");
+      router.refresh();
+    } else {
+      showToast("Error al reclamar. Intenta de nuevo.");
+    }
   }
 
   return (
     <div className="px-5 py-6 space-y-5">
+      {toast && (
+        <div className="fixed top-16 left-0 right-0 mx-4 z-50 pointer-events-none">
+          <div className="bg-dhl-dark text-white text-sm rounded-xl px-4 py-3 shadow-xl max-w-lg mx-auto text-center">
+            {toast}
+          </div>
+        </div>
+      )}
       {/* Hero section */}
       <div>
         {greeting && <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">{greeting}</p>}
