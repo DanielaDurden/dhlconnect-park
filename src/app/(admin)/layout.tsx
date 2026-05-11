@@ -4,6 +4,13 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
+async function signOut() {
+  "use server";
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
 export default async function AdminLayout({
   children,
 }: {
@@ -38,6 +45,14 @@ export default async function AdminLayout({
             <Link href="/home" className="text-white/70 hover:text-white text-sm transition-colors">
               ← App
             </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="text-white/70 hover:text-white text-sm transition-colors border border-white/20 hover:border-white/50 rounded-lg px-3 py-1"
+              >
+                Cerrar sesión
+              </button>
+            </form>
           </div>
         </div>
         <nav className="flex gap-1 px-6 pb-2 max-w-7xl mx-auto overflow-x-auto">
