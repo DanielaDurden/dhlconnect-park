@@ -7,6 +7,8 @@ const REPORT_TYPES = [
   { value: "incidentes", label: "Incidentes", desc: "Todos los reportes con estado y categoría" },
   { value: "riffs", label: "Riffs & Carpooling", desc: "Historial de puntos por colaborador" },
   { value: "demanda", label: "Demanda Insatisfecha", desc: "Eventos de capacidad agotada" },
+  { value: "adopcion_hosts", label: "Adopción Hosts", desc: "Hosts que liberaron su espacio por mes" },
+  { value: "adopcion_guests", label: "Adopción Visitas", desc: "Visitas que reservaron un puesto por mes" },
 ];
 
 export default function ReportDownload() {
@@ -47,7 +49,7 @@ export default function ReportDownload() {
         <div className="bg-dhl-yellow px-5 py-4">
           <h2 className="text-dhl-dark font-black">Tipo de reporte</h2>
         </div>
-        <div className="p-5 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="p-5 grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
           {REPORT_TYPES.map((r) => (
             <button
               key={r.value}

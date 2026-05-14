@@ -1,8 +1,7 @@
 "use client";
 
 import type { UserRole } from "@/types";
-import ExecutiveHome from "./ExecutiveHome";
-import ProfessionalHome from "./ProfessionalHome";
+import HostHome from "./HostHome";
 import GuestHome from "./GuestHome";
 
 interface HomeDashboardProps {
@@ -35,6 +34,7 @@ interface HomeDashboardProps {
   solidarityCount: number;
   availableDesksCount: number;
   weeklyPlansWeek: { day_of_week: number; planned_status: string; solidarity_released: boolean }[];
+  guestReservationOnMyDesk?: { id: string } | null;
 }
 
 function WeekendBanner({ firstName }: { firstName: string }) {
@@ -52,13 +52,22 @@ function WeekendBanner({ firstName }: { firstName: string }) {
 export default function HomeDashboard(props: HomeDashboardProps) {
   const weekend = props.isWeekend ? <WeekendBanner firstName={props.firstName} /> : null;
 
-  if (props.role === "executive") {
-    return <>{weekend}<ExecutiveHome {...props} /></>;
+  if (props.role === "host") {
+    return <>{weekend}<HostHome
+      firstName={props.firstName}
+      isWeekend={props.isWeekend}
+      weeklyPlanToday={props.weeklyPlanToday}
+      weeklyPlansWeek={props.weeklyPlansWeek}
+      totalRiffs={props.totalRiffs}
+      riffsLevel={props.riffsLevel}
+      riffsProgress={props.riffsProgress}
+      riffsNext={props.riffsNext}
+      solidarityCount={props.solidarityCount}
+      guestReservationOnMyDesk={props.guestReservationOnMyDesk ?? null}
+    /></>;
   }
-  if (props.role === "professional" || props.role === "client") {
-    return <>{weekend}<ProfessionalHome {...props} /></>;
-  }
-  if (props.role === "guest") {
+
+  if (props.role === "guest" || props.role === "client") {
     return <>{weekend}<GuestHome {...props} /></>;
   }
 

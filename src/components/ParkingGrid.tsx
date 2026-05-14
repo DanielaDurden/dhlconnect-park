@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ParkingSpotWithReservation, Profile } from "@/types";
 import { PARKING_MANAGED_COUNT, PARKING_PLAN_B } from "@/lib/config";
@@ -9,86 +9,51 @@ interface Props {
   spots: ParkingSpotWithReservation[];
   myProfile: Pick<Profile, "id" | "full_name">;
   today: string;
-  isMonday: boolean;
   myReservationId: string | null;
   totalCapacity: number;
   occupiedCount: number;
 }
 
-const CUTOFF_HOUR = 9;
-const CUTOFF_MIN  = 1; // 9:01 AM
+type SpotState = "mine" | "available" | "occupied" | "disabled";
 
-function isPastCutoff(): boolean {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes() >= CUTOFF_HOUR * 60 + CUTOFF_MIN;
-}
-
-type SpotState = "mine" | "available" | "pending" | "assigned" | "high_freq" | "occupied" | "disabled";
-
-function getSpotState(
-  spot: ParkingSpotWithReservation,
-  myId: string,
-  isMonday: boolean,
-  pastCutoff: boolean
-): SpotState {
+function getSpotState(spot: ParkingSpotWithReservation, myId: string): SpotState {
   if (!spot.is_active || spot.spot_status === "blocked") return "disabled";
-  if (spot.reservation?.user_id === myId) return "mine";
+  if (spot.reservation?.user_id === myId && spot.reservation?.status === "confirmed") return "mine";
   if (spot.reservation?.status === "confirmed") return "occupied";
-  if (spot.spot_status === "high_frequency") return "high_freq";
-  if (spot.spot_status === "fixed") return "assigned";
-  if (spot.spot_status === "director_reserved") {
-    if (isMonday && !pastCutoff) return "pending";
-    return "available";
-  }
+  // Fixed/assigned/director spots are always occupied (unless reservation exists for me above)
+  if (
+    spot.spot_status === "fixed" ||
+    spot.spot_status === "high_frequency" ||
+    spot.spot_status === "director_reserved"
+  ) return "occupied";
   return "available";
 }
 
 const STATE_COLORS: Record<SpotState, string> = {
-  mine:      "bg-blue-500 border-blue-700 text-white",
-  available: "bg-green-500 border-green-700 text-white",
-  pending:   "bg-amber-400 border-amber-600 text-amber-900",
-  assigned:  "bg-red-400 border-red-600 text-white",
-  high_freq: "bg-orange-400 border-orange-600 text-white",
-  occupied:  "bg-gray-400 border-gray-500 text-white",
-  disabled:  "bg-gray-200 border-gray-300 text-gray-400",
+  mine:     "bg-blue-500 border-blue-700 text-white",
+  available:"bg-green-500 border-green-700 text-white",
+  occupied: "bg-dhl-red border-red-700 text-white",
+  disabled: "bg-gray-200 border-gray-300 text-gray-400",
 };
 
-function getSpotLabel(spot: ParkingSpotWithReservation, state: SpotState): string {
-  switch (state) {
-    case "mine":      return "Mi lugar";
-    case "available": return "Libre";
-    case "pending":   return spot.director_name?.split(" ").slice(-1)[0] ?? "Dir.";
-    case "assigned":  return spot.assigned_user_name?.split(",")[0] ?? "Asignado";
-    case "high_freq": return spot.assigned_user_name?.split(",")[0] ?? "Alta Freq.";
-    case "occupied":  return "Ocupado";
-    case "disabled":  return "";
-  }
-}
-
 export default function ParkingGrid({
-  spots, myProfile, today, isMonday, myReservationId, totalCapacity, occupiedCount,
+  spots, myProfile, today, myReservationId, totalCapacity, occupiedCount,
 }: Props) {
   const [selected, setSelected] = useState<ParkingSpotWithReservation | null>(null);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [pendingCancel, setPendingCancel] = useState(false);
-  // Safe SSR default — corrected after hydration
-  const [past930, setPast930] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    setPast930(isPastCutoff());
-  }, []);
-
-  function closeSheet() {
-    setSelected(null);
-    setPendingCancel(false);
-  }
 
   const spotMap = Object.fromEntries(spots.map((s) => [s.spot_number, s]));
   const hasReservation = !!myReservationId;
   const availableCount = totalCapacity - occupiedCount;
   const isPlanB = availableCount === 0;
+
+  function closeSheet() {
+    setSelected(null);
+    setPendingCancel(false);
+  }
 
   function showToast(msg: string) {
     setToast(msg);
@@ -143,15 +108,14 @@ export default function ParkingGrid({
       );
     }
 
-    const state = getSpotState(spot, myProfile.id, isMonday, past930);
+    const state = getSpotState(spot, myProfile.id);
     const color = STATE_COLORS[state];
-    const label = getSpotLabel(spot, state);
     const isSelected = selected?.id === spot.id;
 
     if (state === "disabled") {
       return (
         <div
-          className={`absolute rounded border-2 flex flex-col items-center justify-center ${color}`}
+          className={`absolute rounded border-2 flex items-center justify-center ${color}`}
           style={{ left: x, top: y, width: w, height: h }}
           aria-hidden="true"
         >
@@ -166,15 +130,9 @@ export default function ParkingGrid({
         className={`absolute rounded border-2 flex flex-col items-center justify-center gap-0.5 transition-all hover:scale-105 active:scale-95 shadow-sm ${color} ${isSelected ? "ring-2 ring-dhl-dark ring-offset-1" : ""}`}
         style={{ left: x, top: y, width: w, height: h }}
         aria-label={`Espacio ${num}`}
-        title={`${num} — ${label}`}
+        title={`${num}`}
       >
         <span className="text-[10px] font-bold leading-none">{num}</span>
-        <span className="text-[7px] leading-none opacity-80 text-center px-0.5 line-clamp-1">{label}</span>
-        {spot.is_accessible && (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-2.5 h-2.5" aria-label="Accesible">
-            <circle cx="12" cy="4" r="1"/><path d="m9 9 3 3v6"/><path d="m6 15 3-3 4 4"/><path d="M9 9h6"/>
-          </svg>
-        )}
       </button>
     );
   }
@@ -195,7 +153,6 @@ export default function ParkingGrid({
     );
   }
 
-  // Driving lane visual (yellow stripes)
   function DrivingLane({ x, y, h }: { x: number; y: number; h: number }) {
     return (
       <div
@@ -214,7 +171,7 @@ export default function ParkingGrid({
 
   function BottomSheet() {
     if (!selected) return null;
-    const state = getSpotState(selected, myProfile.id, isMonday, past930);
+    const state = getSpotState(selected, myProfile.id);
 
     return (
       <div
@@ -228,55 +185,25 @@ export default function ParkingGrid({
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-bold text-dhl-dark text-lg">Espacio {selected.spot_number}</h3>
-              <p className="text-dhl-gray text-sm">Nivel -2</p>
+              <p className="text-dhl-gray text-sm capitalize">
+                {selected.level === "street" ? "Nivel Calle" : "Nivel -2"}
+              </p>
             </div>
-            <button
-              onClick={closeSheet}
-              aria-label="Cerrar"
-              className="w-8 h-8 rounded-full bg-dhl-light-gray flex items-center justify-center text-dhl-gray hover:text-dhl-dark"
-            >
+            <button onClick={closeSheet} aria-label="Cerrar"
+              className="w-8 h-8 rounded-full bg-dhl-light-gray flex items-center justify-center text-dhl-gray hover:text-dhl-dark">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
           </div>
 
-          {state === "assigned" && (
+          {state === "occupied" && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
-              <p className="text-sm font-semibold text-red-700">Espacio asignado permanentemente</p>
-              <p className="text-xs text-red-600 mt-0.5">{selected.assigned_user_name}</p>
-              <p className="text-xs text-dhl-gray mt-1">Contacta al Office Manager si necesitas acceder a este espacio.</p>
-            </div>
-          )}
-          {state === "high_freq" && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 mb-4">
-              <p className="text-sm font-semibold text-orange-700">Espacio alta frecuencia</p>
-              <p className="text-xs text-orange-600 mt-0.5">{selected.assigned_user_name}</p>
-              <p className="text-xs text-dhl-gray mt-1">Reservado para colaboradores que asisten más de 4 días a la semana. Check-in obligatorio antes de las 9:01 AM.</p>
-            </div>
-          )}
-
-          {state === "pending" && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
-              <p className="text-sm font-semibold text-amber-800 flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 flex-shrink-0" aria-hidden="true">
-                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                </svg>
-                Reservado hasta las 9:01 AM
-              </p>
-              <p className="text-xs text-amber-700 mt-1">
-                Asignado a <span className="font-semibold">{selected.director_name}</span> los lunes.
-                Si no llega antes de las 9:01, quedará libre.
-              </p>
-            </div>
-          )}
-
-          {state === "available" && selected.spot_status === "director_reserved" && (
-            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
-              <p className="text-sm font-semibold text-green-700">Espacio liberado</p>
-              <p className="text-xs text-green-600 mt-0.5">
-                El director no llegó antes de las 9:01 AM. Disponible para reservar.
-              </p>
+              <p className="text-sm font-semibold text-red-700">Espacio ocupado</p>
+              {selected.assigned_user_name && (
+                <p className="text-xs text-red-600 mt-0.5">{selected.assigned_user_name}</p>
+              )}
+              <p className="text-xs text-dhl-gray mt-1">Este espacio no está disponible hoy.</p>
             </div>
           )}
 
@@ -292,19 +219,16 @@ export default function ParkingGrid({
             </div>
           )}
 
-          {state === "occupied" && (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-4">
-              <p className="text-sm text-dhl-gray">Este espacio ya está ocupado hoy.</p>
+          {state === "available" && (
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
+              <p className="text-sm font-semibold text-green-700">Espacio disponible</p>
             </div>
           )}
 
           <div className="space-y-3">
             {state === "mine" && !pendingCancel && (
-              <button
-                onClick={() => setPendingCancel(true)}
-                disabled={loading}
-                className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60"
-              >
+              <button onClick={() => setPendingCancel(true)} disabled={loading}
+                className="w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60">
                 Cancelar reserva
               </button>
             )}
@@ -324,12 +248,9 @@ export default function ParkingGrid({
               </div>
             )}
 
-            {(state === "available") && !hasReservation && (
-              <button
-                onClick={() => handleReserve(selected)}
-                disabled={loading}
-                className="w-full bg-dhl-red text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60"
-              >
+            {state === "available" && !hasReservation && (
+              <button onClick={() => handleReserve(selected)} disabled={loading}
+                className="w-full bg-dhl-red text-white font-bold py-3.5 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60">
                 {loading ? "Reservando..." : "Reservar este espacio"}
               </button>
             )}
@@ -337,12 +258,6 @@ export default function ParkingGrid({
             {state === "available" && hasReservation && (
               <p className="text-center text-sm text-dhl-gray">
                 Ya tienes un espacio reservado hoy.
-              </p>
-            )}
-
-            {state === "pending" && (
-              <p className="text-center text-sm text-amber-600 font-medium">
-                Disponible a partir de las 9:01 AM si el director no llega
               </p>
             )}
           </div>
@@ -379,12 +294,10 @@ export default function ParkingGrid({
         </div>
         <div className="flex justify-between mt-1">
           <span className="text-xs text-dhl-gray">{availableCount} libres</span>
-          {isMonday && !past930 && (
-            <span className="text-xs text-amber-600 font-medium">Lunes — Dir. liberan a las 9:01</span>
-          )}
         </div>
       </div>
 
+      {/* Plan B */}
       {isPlanB && (
         <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-4 mb-3">
           <div className="flex items-start gap-3 mb-3">
@@ -393,10 +306,8 @@ export default function ParkingGrid({
               <path d="M12 9v4"/><path d="M12 17h.01"/>
             </svg>
             <div>
-              <p className="text-sm font-bold text-red-700">Estacionamiento completo — Plan B</p>
-              <p className="text-xs text-red-600 mt-0.5">
-                Los {PARKING_MANAGED_COUNT} espacios gestionados están ocupados hoy.
-              </p>
+              <p className="text-sm font-bold text-red-700">Estacionamiento completo</p>
+              <p className="text-xs text-red-600 mt-0.5">Los {PARKING_MANAGED_COUNT} espacios gestionados están ocupados hoy.</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -424,18 +335,54 @@ export default function ParkingGrid({
       {/* Floor Plan */}
       <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
         <div className="bg-dhl-yellow px-4 py-3 flex items-center justify-between">
-          <h2 className="text-dhl-dark font-bold text-sm">Nivel -2 — Vista general</h2>
-          <span className="text-dhl-dark/60 text-xs">Toca un espacio para reservar</span>
+          <h2 className="text-dhl-dark font-bold text-sm">Estacionamiento CE</h2>
+          <span className="text-dhl-dark/60 text-xs">Toca un espacio</span>
         </div>
 
-        <div className="overflow-auto p-3">
+        {/* Nivel Calle */}
+        <div className="px-4 pt-4 pb-2">
+          <p className="text-[10px] font-black text-dhl-gray/60 uppercase tracking-widest mb-2">Nivel Calle</p>
+          <div className="flex gap-3">
+            {[18, 19].map((num) => {
+              const spot = spotMap[num];
+              if (!spot) return null;
+              const state = getSpotState(spot, myProfile.id);
+              const color = STATE_COLORS[state];
+              const isSelected = selected?.id === spot.id;
+              if (state === "disabled") {
+                return (
+                  <div key={num}
+                    className={`w-14 h-10 rounded border-2 flex items-center justify-center ${color}`}
+                    aria-hidden="true">
+                    <span className="text-[10px] font-bold opacity-60">{num}</span>
+                  </div>
+                );
+              }
+              return (
+                <button key={num}
+                  onClick={() => setSelected(spot)}
+                  className={`w-14 h-10 rounded border-2 flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-sm ${color} ${isSelected ? "ring-2 ring-dhl-dark ring-offset-1" : ""}`}
+                  aria-label={`Espacio ${num}`}>
+                  <span className="text-[11px] font-bold">{num}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="mx-4 my-3 border-t-2 border-dashed border-dhl-mid-gray flex items-center gap-2">
+          <span className="text-[10px] font-black text-dhl-gray/60 uppercase tracking-widest bg-white pr-2">Nivel -2</span>
+        </div>
+
+        {/* Nivel -2 floor plan */}
+        <div className="overflow-auto px-3 pb-3">
           <div className="relative rounded-xl bg-gray-50/80" style={{ width: 600, height: 950 }}>
 
-            {/* Zone labels */}
             <span className="absolute text-[8px] font-bold text-dhl-gray/60 uppercase tracking-widest" style={{ left: 8, top: 0 }}>Columna principal</span>
             <span className="absolute text-[8px] font-bold text-dhl-gray/60 uppercase tracking-widest" style={{ left: 120, top: 0 }}>Interior Nivel -2</span>
 
-            {/* ── LEFT COLUMN — spots 226 → 207 (top to bottom) ── */}
+            {/* LEFT COLUMN — 226 → 207 */}
             <ParkingSpot num={226} x={8}  y={16} />
             <ParkingSpot num={225} x={8}  y={60} />
             <ParkingSpot num={224} x={8}  y={104} />
@@ -457,10 +404,10 @@ export default function ParkingGrid({
             <ParkingSpot num={208} x={8}  y={808} />
             <ParkingSpot num={207} x={8}  y={852} />
 
-            {/* ── INTERIOR — top BODEGA ── */}
+            {/* INTERIOR — top BODEGA */}
             <ParkingBox label="BODEGA" x={68} y={16} w={474} h={56} />
 
-            {/* ── Accessible row 174–181 ── */}
+            {/* Accessible row 174–181 */}
             <ParkingSpot num={174} x={68}  y={78} />
             <ParkingSpot num={175} x={118} y={78} />
             <ParkingSpot num={176} x={168} y={78} />
@@ -471,7 +418,7 @@ export default function ParkingGrid({
             <ParkingSpot num={181} x={418} y={78} />
             <ParkingBox label="BODEGA" x={470} y={16} w={72} h={100} />
 
-            {/* ── Interior left block (BODEGA + 243–247) ── */}
+            {/* Interior left block */}
             <ParkingBox label="BODEGA" x={68} y={124} w={62} h={68} />
             <ParkingSpot num={247} x={68}  y={198} />
             <ParkingSpot num={246} x={68}  y={242} />
@@ -479,21 +426,21 @@ export default function ParkingGrid({
             <ParkingSpot num={244} x={68}  y={330} />
             <ParkingSpot num={243} x={68}  y={374} />
 
-            {/* ── ESCALERAS ── */}
+            {/* ESCALERAS */}
             <ParkingBox label="ESCALERAS" x={120} y={124} w={108} h={430} />
 
-            {/* ── Interior interactive spots (228, 229 rojo / 230 verde) ── */}
+            {/* Interactive spots */}
             <ParkingSpot num={228} x={234} y={286} />
             <ParkingSpot num={229} x={234} y={330} />
             <ParkingSpot num={230} x={234} y={198} />
 
-            {/* ── Driving lane ── */}
+            {/* Driving lane */}
             <DrivingLane x={286} y={124} h={540} />
 
-            {/* ── ASENSORES ── */}
-            <ParkingBox label="ASENSORES" x={316} y={124} w={108} h={350} />
+            {/* ASCENSORES */}
+            <ParkingBox label="ASCENSORES" x={316} y={124} w={108} h={350} />
 
-            {/* ── Right interior disabled spots (231–236) ── */}
+            {/* Right interior */}
             <ParkingSpot num={231} x={430} y={124} />
             <ParkingSpot num={232} x={430} y={168} />
             <ParkingSpot num={233} x={430} y={212} />
@@ -501,7 +448,7 @@ export default function ParkingGrid({
             <ParkingSpot num={235} x={430} y={300} />
             <ParkingSpot num={236} x={430} y={344} />
 
-            {/* ── Bottom interior spots ── */}
+            {/* Bottom interior */}
             <ParkingSpot num={242} x={120} y={560} />
             <ParkingSpot num={241} x={166} y={560} />
             <ParkingSpot num={240} x={234} y={560} />
@@ -510,10 +457,10 @@ export default function ParkingGrid({
             <ParkingSpot num={237} x={408} y={478} />
             <ParkingBox label="BODEGA" x={430} y={388} w={112} h={80} />
 
-            {/* ── Bottom section ── */}
+            {/* Bottom section */}
             <ParkingSpot num={206} x={68}  y={896} />
 
-            {/* ── Bottom row 204–195 ── */}
+            {/* Bottom row */}
             <ParkingSpot num={204} x={120} y={720} />
             <ParkingSpot num={203} x={168} y={720} />
             <ParkingSpot num={202} x={216} y={720} />
@@ -523,14 +470,13 @@ export default function ParkingGrid({
             <ParkingSpot num={198} x={408} y={720} />
             <ParkingSpot num={197} x={456} y={720} />
             <ParkingSpot num={205} x={120} y={764} />
-
             <ParkingSpot num={196} x={456} y={764} />
             <ParkingSpot num={195} x={502} y={764} />
 
-            {/* ── Bottom BODEGA ── */}
+            {/* Bottom BODEGA */}
             <ParkingBox label="BODEGA" x={120} y={808} w={424} h={50} />
 
-            {/* ── RIGHT COLUMN 182–194 ── */}
+            {/* RIGHT COLUMN 182–194 */}
             <ParkingSpot num={182} x={550} y={124} />
             <ParkingSpot num={183} x={550} y={168} />
             <ParkingSpot num={184} x={550} y={212} />
@@ -551,12 +497,10 @@ export default function ParkingGrid({
       {/* Legend */}
       <div className="mt-3 grid grid-cols-2 gap-2">
         {[
-          { color: "bg-green-500 border-green-700",  label: "Libre / Disponible" },
-          { color: "bg-amber-400 border-amber-600",  label: "Director (lib. 9:01 lunes)" },
-          { color: "bg-orange-400 border-orange-600",label: "Alta freq. (>4 días/sem)" },
-          { color: "bg-red-400 border-red-600",      label: "Asignado permanente" },
-          { color: "bg-blue-500 border-blue-700",    label: "Mi reserva" },
-          { color: "bg-gray-400 border-gray-500",    label: "Ocupado" },
+          { color: "bg-green-500 border-green-700",  label: "Disponible" },
+          { color: "bg-dhl-red border-red-700",       label: "Ocupado / Asignado" },
+          { color: "bg-blue-500 border-blue-700",     label: "Mi reserva" },
+          { color: "bg-gray-200 border-gray-300",     label: "Fuera de servicio" },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
             <div className={`w-4 h-4 rounded border-2 flex-shrink-0 ${item.color}`} />

@@ -65,9 +65,9 @@ export default function PlannerForm({ weekStart, weekDates, initialPlans }: Prop
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 lg:grid lg:grid-cols-5 lg:gap-3 lg:space-y-0 lg:items-start">
       {toast && (
-        <div className="fixed top-16 left-0 right-0 mx-4 z-50 pointer-events-none">
+        <div className="fixed top-16 left-0 right-0 mx-4 z-50 pointer-events-none lg:col-span-5">
           <div className="bg-dhl-dark text-white text-sm rounded-xl px-4 py-3 shadow-xl max-w-lg mx-auto text-center">
             {toast}
           </div>
@@ -89,7 +89,7 @@ export default function PlannerForm({ weekStart, weekDates, initialPlans }: Prop
             className={`bg-white rounded-2xl shadow-sm border ${isToday ? "border-dhl-yellow" : "border-dhl-mid-gray"} overflow-hidden`}
           >
             {/* Day header */}
-            <div className={`px-4 py-3 flex items-center justify-between ${isToday ? "bg-dhl-yellow" : "bg-dhl-light-gray"}`}>
+            <div className={`px-4 py-3 flex items-center justify-between lg:flex-col lg:items-start lg:gap-1 ${isToday ? "bg-dhl-yellow" : "bg-dhl-light-gray"}`}>
               <div>
                 <p className={`text-sm font-bold ${isToday ? "text-dhl-dark" : "text-dhl-gray"}`}>
                   {DAY_NAMES[i]}
@@ -110,40 +110,40 @@ export default function PlannerForm({ weekStart, weekDates, initialPlans }: Prop
 
             {/* Actions */}
             {!isPast ? (
-              <div className="px-4 py-3 flex flex-col gap-2">
+              <div className="px-3 py-3 flex flex-col gap-2">
                 <button
                   onClick={() => savePlan(dayOfWeek, true)}
                   disabled={loading === dayOfWeek}
-                  className={`w-full py-3 rounded-xl text-sm font-bold border-2 transition-all disabled:opacity-50 ${
+                  className={`w-full py-2.5 rounded-xl text-sm lg:text-xs font-bold border-2 transition-all disabled:opacity-50 ${
                     isOffice
                       ? "bg-dhl-dark text-white border-dhl-dark"
                       : "bg-white text-dhl-dark border-dhl-mid-gray hover:border-dhl-dark"
                   }`}
                 >
-                  {loading === dayOfWeek ? "..." : "🏢 Voy a la oficina"}
+                  {loading === dayOfWeek ? "..." : "🏢 Oficina"}
                 </button>
                 <div className="flex flex-col gap-1">
                   <button
                     onClick={() => savePlan(dayOfWeek, false)}
                     disabled={loading === dayOfWeek}
-                    className={`w-full py-3 rounded-xl text-sm font-bold border-2 transition-all disabled:opacity-50 ${
+                    className={`w-full py-2.5 rounded-xl text-sm lg:text-xs font-bold border-2 transition-all disabled:opacity-50 ${
                       isReleased
                         ? "bg-dhl-yellow text-dhl-dark border-dhl-yellow"
                         : "bg-white text-dhl-dark border-dhl-mid-gray hover:border-dhl-yellow"
                     }`}
                   >
-                    {loading === dayOfWeek ? "..." : "🎸 Comparto mi espacio"}
-                    {isReleased && <span className="ml-1.5 text-[10px] font-normal opacity-70">+50 Riffs · CoWork Premium activo</span>}
+                    {loading === dayOfWeek ? "..." : "🎸 Compartir"}
+                    {isReleased && <span className="ml-1 text-[9px] font-normal opacity-70 hidden lg:inline">+50 Riffs</span>}
                   </button>
                   {!isReleased && (
-                    <p className="text-[10px] text-dhl-gray/60 text-center">
+                    <p className="text-[10px] text-dhl-gray/60 text-center lg:hidden">
                       El equipo vive CoWork Premium · Tú ganas +50 Riffs
                     </p>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="px-4 py-3">
+              <div className="px-3 py-3">
                 <p className="text-xs text-dhl-gray/50 text-center">
                   {plan
                     ? isReleased ? "Espacio compartido" : "En oficina"

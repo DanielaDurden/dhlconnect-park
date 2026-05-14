@@ -35,9 +35,10 @@ interface Props {
 type AdminSpotState = "occupied" | "assigned" | "director" | "available" | "out_of_service";
 
 const ROLE_LABELS: Record<string, string> = {
-  executive: "Executive",
-  professional: "Professional",
+  host: "Host",
+  executive: "Host",
   guest: "Visita",
+  professional: "Visita",
   admin: "Admin",
 };
 
@@ -128,7 +129,6 @@ export default function AdminParkingMap({ spots, users, today }: Props) {
   const occupied = spots.filter((s) => s.reservation?.status === "confirmed").length;
   const available = spots.filter((s) => s.is_active && !s.reservation && s.spot_status === "available").length;
   const outOfService = spots.filter((s) => !s.is_active || s.spot_status === "blocked").length;
-  const accessible = spots.filter((s) => s.is_accessible && s.is_active).length;
 
   // ── Inner components ────────────────────────────────────────────
 
@@ -210,12 +210,11 @@ export default function AdminParkingMap({ spots, users, today }: Props) {
       )}
 
       {/* Stats strip */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Ocupados", value: occupied, color: "text-red-600" },
           { label: "Disponibles", value: available, color: "text-green-600" },
           { label: "Fuera de servicio", value: outOfService, color: "text-gray-500" },
-          { label: "Accesibles activos", value: accessible, color: "text-blue-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-2xl border border-dhl-mid-gray p-4 text-center shadow-sm">
             <p className={`text-3xl font-black ${s.color}`}>{s.value}</p>
@@ -238,6 +237,38 @@ export default function AdminParkingMap({ spots, users, today }: Props) {
             <span className="text-xs text-dhl-gray">{item.label}</span>
           </div>
         ))}
+      </div>
+
+      {/* Street level spots */}
+      <div className="bg-white rounded-2xl border border-dhl-mid-gray shadow-sm overflow-hidden">
+        <div className="bg-dhl-yellow px-4 py-3">
+          <h2 className="text-dhl-dark font-bold text-sm">Nivel Calle</h2>
+        </div>
+        <div className="p-4 flex gap-4">
+          {[18, 19].map((num) => {
+            const spot = spotMap[num];
+            if (!spot) return (
+              <div key={num} className="w-16 h-12 rounded border-2 border-dashed border-gray-300 bg-gray-100 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-gray-400">{num}</span>
+              </div>
+            );
+            const state = getSpotState(spot);
+            const style = STATE_STYLE[state];
+            const isSelected = selected?.id === spot.id;
+            return (
+              <button
+                key={num}
+                onClick={() => { setSelected(spot); setReserveFor(""); }}
+                className={`w-16 h-12 rounded border-2 flex flex-col items-center justify-center gap-0.5 transition-all hover:scale-105 active:scale-95 shadow-sm ${style} ${isSelected ? "ring-2 ring-dhl-dark ring-offset-1 scale-105" : ""}`}
+                aria-label={`Espacio ${num}`}
+              >
+                <span className="text-[11px] font-bold leading-none">{num}</span>
+                {state === "occupied" && <span className="text-[7px] leading-none opacity-90">{abbr(spot.reservation?.profile_name)}</span>}
+              </button>
+            );
+          })}
+          <p className="text-xs text-dhl-gray self-center ml-2">2 espacios · acceso directo desde calle</p>
+        </div>
       </div>
 
       {/* Map + Panel */}

@@ -14,10 +14,10 @@ export default async function IncidentesPage() {
     admin.from("incidents").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(10),
   ]);
 
-  const isExecutive = profile?.role === "executive";
+  const isHost = profile?.role === "host";
 
   return (
-    <div className="px-4 py-5">
+    <div className="px-4 py-5 lg:px-8 lg:py-8">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-dhl-dark">Directo a Office Manager</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
@@ -25,12 +25,12 @@ export default async function IncidentesPage() {
         </p>
       </div>
 
-      <IncidentForm profile={profile!} />
+      <div className="lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:items-start">
+        <IncidentForm profile={profile!} />
 
-      {/* My recent incidents — hidden for executives */}
-      {!isExecutive && myIncidents && myIncidents.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-sm font-bold text-dhl-dark mb-3">Mis reportes recientes</h2>
+        {!isHost && myIncidents && myIncidents.length > 0 && (
+          <div>
+            <h2 className="text-sm font-bold text-dhl-dark mb-3">Mis reportes recientes</h2>
           <div className="space-y-3">
             {myIncidents.map((inc) => (
               <div
@@ -94,8 +94,9 @@ export default async function IncidentesPage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

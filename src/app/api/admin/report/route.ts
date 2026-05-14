@@ -125,6 +125,41 @@ export async function GET(req: NextRequest) {
         perfil: r.profiles?.role ?? "",
       }))
     );
+  } else if (type === "adopcion_hosts") {
+    const { data } = await admin
+      .from("weekly_plans")
+      .select("week_start, user_id, solidarity_released, profiles!inner(full_name, role)")
+      .in("profiles.role", ["host", "executive"])
+      .gte("week_start", from)
+      .lte("week_start", to)
+      .order("week_start");
+
+    filename = `adopcion_hosts_${from}_${to}.csv`;
+    csv = toCsv(
+      (data ?? []).map((r: any) => ({
+        semana: r.week_start,
+        colaborador: r.profiles?.full_name ?? "",
+        perfil: r.profiles?.role ?? "",
+        libero_espacio: r.solidarity_released ? "Sí" : "No",
+      }))
+    );
+  } else if (type === "adopcion_guests") {
+    const { data } = await admin
+      .from("desk_reservations")
+      .select("date, status, profiles!inner(full_name, role)")
+      .eq("profiles.role", "guest")
+      .gte("date", from)
+      .lte("date", to)
+      .order("date");
+
+    filename = `adopcion_guests_${from}_${to}.csv`;
+    csv = toCsv(
+      (data ?? []).map((r: any) => ({
+        fecha: r.date,
+        colaborador: r.profiles?.full_name ?? "",
+        estado_reserva: r.status,
+      }))
+    );
   } else {
     return new NextResponse("Invalid type", { status: 400 });
   }

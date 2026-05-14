@@ -32,6 +32,7 @@ export default async function HomePage() {
     { count: solidarityCount },
     { count: occupiedDesksCount },
     { count: totalDesksCount },
+    { data: myDeskRow },
   ] = await Promise.all([
     admin.from("profiles").select("full_name, area, role").eq("id", user!.id).single(),
     admin
@@ -75,9 +76,29 @@ export default async function HomePage() {
       .from("desks")
       .select("id", { count: "exact", head: true })
       .eq("is_active", true),
+    admin
+      .from("desks")
+      .select("id")
+      .eq("assigned_user_id", user!.id)
+      .eq("is_active", true)
+      .maybeSingle(),
   ]);
 
-  const role = (profile?.role ?? "professional") as UserRole;
+  const role = (profile?.role ?? "guest") as UserRole;
+
+  // For host: check if there's a guest reservation on their desk today
+  let guestReservationOnMyDesk: { id: string } | null = null;
+  if ((role === "host" || role === "executive") && myDeskRow?.id) {
+    const { data: guestRes } = await admin
+      .from("desk_reservations")
+      .select("id")
+      .eq("desk_id", myDeskRow.id)
+      .eq("date", today)
+      .eq("status", "confirmed")
+      .neq("user_id", user!.id)
+      .maybeSingle();
+    guestReservationOnMyDesk = guestRes ?? null;
+  }
 
   const totalRiffs = (riffsData ?? []).reduce((sum: number, r: { points: number }) => sum + r.points, 0);
   const riffsInfo = getRiffsLevel(totalRiffs);
@@ -97,12 +118,10 @@ export default async function HomePage() {
 
   let dailyActionCompleted: boolean;
   if (isWeekend) {
-    // No action needed on weekends — planner only covers Mon–Fri
     dailyActionCompleted = true;
-  } else if (role === "executive") {
+  } else if (role === "host" || role === "executive") {
     dailyActionCompleted = !!weeklyPlanToday;
   } else if (role === "professional") {
-    // Card shows until: checked in OR explicitly released (cancelled) today
     dailyActionCompleted =
       deskReservationToday?.checked_in === true ||
       deskReservationToday?.status === "cancelled";
@@ -148,6 +167,7 @@ export default async function HomePage() {
     solidarityCount: solidarityCountVal,
     availableDesksCount,
     isWeekend,
+    guestReservationOnMyDesk,
     weeklyPlansWeek: (weeklyPlansWeek ?? []).map((p) => ({
       day_of_week: p.day_of_week as number,
       planned_status: p.planned_status as string,

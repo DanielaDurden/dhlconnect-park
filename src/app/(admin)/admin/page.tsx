@@ -12,9 +12,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  executive: "Executive",
-  professional: "Professional",
+  host: "Host",
+  executive: "Host",
   guest: "Visita",
+  professional: "Visita",
   admin: "Admin",
   client: "Cliente",
 };
@@ -80,7 +81,7 @@ export default async function AdminDashboard() {
           .eq("week_start", weekStart)
           .eq("day_of_week", dayOfWeek)
           .eq("solidarity_released", true),
-    admin.from("profiles").select("id", { count: "exact", head: true }).eq("role", "executive"),
+    admin.from("profiles").select("id", { count: "exact", head: true }).in("role", ["executive", "host"]),
     admin.from("riffs_log")
       .select("points")
       .eq("action", "checkin_carpooling")
@@ -100,6 +101,26 @@ export default async function AdminDashboard() {
       .gte("created_at", weekStart)
       .order("created_at", { ascending: false })
       .limit(300),
+  ]);
+
+  // Adoption KPIs (month-to-date)
+  const monthStart = `${today.slice(0, 7)}-01`;
+  const [
+    { count: totalHosts },
+    { data: hostReleasedThisMonth },
+    { count: totalGuests },
+    { data: guestReservationsThisMonth },
+  ] = await Promise.all([
+    admin.from("profiles").select("id", { count: "exact", head: true }).in("role", ["host", "executive"]),
+    admin.from("weekly_plans")
+      .select("user_id")
+      .eq("solidarity_released", true)
+      .gte("week_start", monthStart),
+    admin.from("profiles").select("id", { count: "exact", head: true }).eq("role", "guest"),
+    admin.from("desk_reservations")
+      .select("user_id")
+      .gte("date", monthStart)
+      .eq("status", "confirmed"),
   ]);
 
   // Ocupación
@@ -150,6 +171,12 @@ export default async function AdminDashboard() {
     .slice(0, 5);
 
   const showAlert = demandaInsatisfecha >= 3;
+
+  // Adoption KPIs
+  const uniqueHostsReleased = new Set((hostReleasedThisMonth ?? []).map((r: { user_id: string }) => r.user_id)).size;
+  const hostAdoptionPct = (totalHosts ?? 0) > 0 ? Math.round((uniqueHostsReleased / (totalHosts ?? 1)) * 100) : 0;
+  const uniqueGuestsReserved = new Set((guestReservationsThisMonth ?? []).map((r: { user_id: string }) => r.user_id)).size;
+  const guestAdoptionPct = (totalGuests ?? 0) > 0 ? Math.round((uniqueGuestsReserved / (totalGuests ?? 1)) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -228,9 +255,35 @@ export default async function AdminDashboard() {
         <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
           <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">Sharing Rate</p>
           <p className="text-4xl font-black text-dhl-dark">{sharingRatePct}%</p>
-          <p className="text-xs text-dhl-gray mt-1">{sharingCount} / {totalExec} ejecutivos</p>
+          <p className="text-xs text-dhl-gray mt-1">{sharingCount} / {totalExec} hosts</p>
           <div className="mt-3 h-1.5 bg-dhl-mid-gray rounded-full overflow-hidden">
             <div className="h-full bg-dhl-yellow rounded-full transition-all" style={{ width: `${sharingRatePct}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Adoption KPIs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
+          <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">% Adopción Hosts (mes)</p>
+          <p className="text-4xl font-black text-dhl-dark">{hostAdoptionPct}%</p>
+          <p className="text-xs text-dhl-gray mt-1">{uniqueHostsReleased} / {totalHosts ?? 0} hosts liberaron al menos una vez</p>
+          <div className="mt-3 h-1.5 bg-dhl-mid-gray rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${hostAdoptionPct >= 70 ? "bg-green-500" : hostAdoptionPct >= 40 ? "bg-amber-400" : "bg-red-500"}`}
+              style={{ width: `${hostAdoptionPct}%` }}
+            />
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
+          <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">% Adopción Visitas (mes)</p>
+          <p className="text-4xl font-black text-dhl-dark">{guestAdoptionPct}%</p>
+          <p className="text-xs text-dhl-gray mt-1">{uniqueGuestsReserved} / {totalGuests ?? 0} visitas reservaron al menos una vez</p>
+          <div className="mt-3 h-1.5 bg-dhl-mid-gray rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${guestAdoptionPct >= 70 ? "bg-green-500" : guestAdoptionPct >= 40 ? "bg-amber-400" : "bg-red-500"}`}
+              style={{ width: `${guestAdoptionPct}%` }}
+            />
           </div>
         </div>
       </div>

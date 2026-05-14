@@ -1,8 +1,7 @@
 "use client";
 
 import type { UserRole } from "@/types";
-import ExecutiveCard from "./ExecutiveCard";
-import ProfessionalCard from "./ProfessionalCard";
+import HostCard from "./HostCard";
 import GuestCard from "./GuestCard";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -55,27 +54,12 @@ export default function DailyCard(props: DailyCardProps) {
       <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest mb-4">{greeting}</p>
 
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8">
-        {props.role === "executive" && (
-          <ExecutiveCard
-            firstName={props.firstName}
-            onComplete={onComplete}
-          />
-        )}
-        {props.role === "professional" && (
-          <ProfessionalCard
-            firstName={props.firstName}
-            deskCode={props.deskCode}
-            reservation={props.deskReservationToday}
-            onComplete={onComplete}
-          />
+        {props.role === "host" && (
+          <HostCard firstName={props.firstName} onComplete={onComplete} />
         )}
         {(props.role === "guest" || props.role === "client") && (
-          <GuestCard
-            firstName={props.firstName}
-            availableDesksCount={props.availableDesksCount}
-          />
+          <GuestCard firstName={props.firstName} availableDesksCount={props.availableDesksCount} />
         )}
-        {props.role === "admin" && null}
       </div>
     </div>
   );

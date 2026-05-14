@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import DeskMap from "@/components/DeskMap";
 import type { DeskWithStatus } from "@/types";
+import { getWeekStart } from "@/lib/dateUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,11 @@ export default async function DesksPage() {
   const admin = createAdminClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+  const weekStart = getWeekStart(now);
+  const rawDay = now.getDay();
+  const dayOfWeek = rawDay === 0 ? 7 : rawDay;
 
   // Get user profile
   const { data: profile } = await admin
@@ -25,12 +30,20 @@ export default async function DesksPage() {
     { data: reservations },
     { data: dayStatuses },
     { data: todaySchedule },
+    { data: todayReleases },
   ] = await Promise.all([
     admin.from("desks").select("*").eq("is_active", true).order("grid_row").order("grid_col"),
     admin.from("desk_reservations").select("*, profiles!inner(full_name, area)").eq("date", today).eq("status", "confirmed"),
     admin.from("user_day_status").select("user_id, status").eq("date", today),
-    admin.from("area_desk_schedule").select("area, desk_count").eq("day_of_week", new Date().getDay()),
+    admin.from("area_desk_schedule").select("area, desk_count").eq("day_of_week", rawDay),
+    admin.from("weekly_plans")
+      .select("user_id")
+      .eq("week_start", weekStart)
+      .eq("day_of_week", dayOfWeek)
+      .eq("solidarity_released", true),
   ]);
+
+  const releasedHostIds = (todayReleases ?? []).map((p: { user_id: string }) => p.user_id);
 
   // Fetch profiles for assigned desks in a single IN query
   const assignedUserIds = (desks ?? []).map((d) => d.assigned_user_id).filter(Boolean) as string[];
@@ -65,7 +78,7 @@ export default async function DesksPage() {
   // dayOfWeek and schedule already fetched above
 
   return (
-    <div className="px-4 py-5">
+    <div className="px-4 py-5 lg:px-8 lg:py-8">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-dhl-dark">Mi Espacio</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
@@ -107,7 +120,7 @@ export default async function DesksPage() {
               {desks?.find((d) => d.id === myReservation.desk_id)?.code}
             </p>
             <p className="text-xs text-green-600">
-              Check-in antes de las 9:01 AM para mantener tu reserva
+              Tu reserva está confirmada para hoy
             </p>
           </div>
         </div>
@@ -133,6 +146,7 @@ export default async function DesksPage() {
         today={today}
         myReservationId={myReservation?.id ?? null}
         myRole={profile?.role as import("@/types").UserRole}
+        releasedHostIds={releasedHostIds}
       />
     </div>
   );

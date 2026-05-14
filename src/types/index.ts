@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "executive" | "professional" | "guest" | "client";
+export type UserRole = "admin" | "executive" | "professional" | "guest" | "client" | "host";
 export type UserArea =
   | "FIN"
   | "OE"
@@ -31,12 +31,16 @@ export type IncidentCategory =
   | "other";
 export type IncidentStatus = "open" | "in_progress" | "resolved";
 
-// Riffs gamification
+// Riffs gamification — v3 simplified actions
 export type RiffsAction =
-  | "solidarity_release"    // +50 — executive/professional libera solidariamente
-  | "checkin_carpooling"    // +30 — professional marca check-in con carpooling
-  | "early_checkout"        // +20 — professional libera espacio antes de tiempo
-  | "checkin_ontime";       // +10 — check-in a tiempo (base)
+  | "solidarity_release"    // +50 — legacy alias (kept for existing data)
+  | "voluntary_release"     // +50 — host libera su espacio voluntariamente
+  | "checkin_carpooling"    // +30 — legacy alias
+  | "carpool"               // +30 — host confirma que viene en carpool
+  | "early_checkout"        // +20 — legacy
+  | "checkin_ontime"        // +10 — legacy
+  | "recover_base_penalty"  // -50 — host recupera base con reserva activa de guest
+  | "manual_adjustment";    // variable — ajuste manual del admin
 
 export type RiffsLevel = "Opening Act" | "Rising Star" | "Headliner" | "Rock Legend";
 
@@ -46,6 +50,7 @@ export interface RiffsLog {
   action: RiffsAction;
   points: number;
   ref_id?: string | null;
+  note?: string | null;
   created_at: string;
 }
 
@@ -57,10 +62,14 @@ export function getRiffsLevel(total: number): { level: RiffsLevel; next: number;
 }
 
 export const RIFFS_POINTS: Record<RiffsAction, number> = {
-  solidarity_release:  50,
-  checkin_carpooling:  30,
-  early_checkout:      20,
-  checkin_ontime:      10,
+  solidarity_release:    50,
+  voluntary_release:     50,
+  checkin_carpooling:    30,
+  carpool:               30,
+  early_checkout:        20,
+  checkin_ontime:        10,
+  recover_base_penalty: -50,
+  manual_adjustment:      0, // override per request
 };
 
 export interface Profile {
@@ -164,6 +173,8 @@ export interface Incident {
   description: string;
   location: string | null;
   status: IncidentStatus;
+  resolution_comment?: string | null;
+  resolved_at?: string | null;
   created_at: string;
   profile?: Pick<Profile, "full_name">;
 }

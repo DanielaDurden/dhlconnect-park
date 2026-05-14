@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface Props {
   firstName: string;
@@ -32,45 +30,12 @@ export default function GuestHome({
   riffsNext,
   availableDesksCount,
 }: Props) {
-  const router = useRouter();
-  const [releasing, setReleasing] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  }
-
-  const hasOccupied = !!deskReservationToday && deskReservationToday.checked_in;
-
-  async function handleRelease() {
-    if (!deskReservationToday?.id) return;
-    setReleasing(true);
-    const res = await fetch("/api/desks/release", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reservation_id: deskReservationToday.id, solidarity: false }),
-    });
-    setReleasing(false);
-    if (res.ok) {
-      showToast("Espacio liberado. ¡Gracias! 🙌");
-      router.refresh();
-    } else {
-      showToast("Error al liberar. Intenta de nuevo.");
-    }
-  }
+  const hasReservation = !!deskReservationToday && deskReservationToday.status === "confirmed";
 
   return (
-    <div className="px-5 py-6 space-y-5">
-      {toast && (
-        <div className="fixed top-16 left-0 right-0 mx-4 z-50 pointer-events-none">
-          <div className="bg-dhl-dark text-white text-sm rounded-xl px-4 py-3 shadow-xl max-w-lg mx-auto text-center">
-            {toast}
-          </div>
-        </div>
-      )}
-      {/* Hero section */}
-      <div>
+    <div className="px-5 py-6 lg:py-8 lg:px-8">
+      {/* Hero */}
+      <div className="mb-6">
         <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest">Hola de nuevo,</p>
         <div className="flex items-center gap-2 mt-1">
           <p className="text-3xl font-black text-dhl-dark">{firstName}.</p>
@@ -78,70 +43,90 @@ export default function GuestHome({
         </div>
       </div>
 
-      {/* Status espacio */}
-      {hasOccupied ? (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-5 shadow-sm">
-          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">📍 OCUPADO POR TI</p>
-          <p className="text-3xl font-black text-blue-900 mt-1">Espacio {deskCode}</p>
-          <div className="mt-3">
-            <button
-              onClick={handleRelease}
-              disabled={releasing}
-              className="inline-flex items-center gap-1 text-xs text-blue-500/80 underline disabled:opacity-50"
-            >
-              {releasing ? "Liberando..." : "Liberar espacio"}
-            </button>
-            <p className="text-[10px] text-dhl-gray mt-1">+20 Riffs si liberas antes</p>
+      {/* Two-column grid on desktop */}
+      <div className="lg:grid lg:grid-cols-[1fr_340px] lg:gap-6 lg:items-start space-y-5 lg:space-y-0">
+
+        {/* ── Left column ── */}
+        <div className="space-y-5">
+          {hasReservation ? (
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-5 shadow-sm">
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">📍 RESERVA ACTIVA</p>
+              <p className="text-3xl font-black text-blue-900 mt-1">Puesto {deskCode}</p>
+              <p className="text-sm text-blue-700/70 mt-1">Tu reserva está confirmada para hoy.</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-dhl-mid-gray">
+              <p className="text-5xl font-black text-dhl-dark">{availableDesksCount}</p>
+              <p className="text-sm text-dhl-gray mt-1">espacios disponibles ahora</p>
+              <p className="text-xs text-dhl-gray/70 mt-2 leading-relaxed">
+                Reserva tu puesto para el día desde el mapa de puestos.
+              </p>
+              <Link
+                href="/desks"
+                className="block bg-dhl-dark text-white py-3 rounded-2xl text-sm font-bold text-center w-full mt-4"
+              >
+                🗺️ Ver mapa de puestos →
+              </Link>
+            </div>
+          )}
+
+          {/* Quick links */}
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/parking">
+              <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2 active:scale-95 transition-transform hover:border-dhl-yellow border border-dhl-mid-gray">
+                <span className="text-2xl">🚗</span>
+                <p className="text-sm font-bold text-dhl-dark">Parking</p>
+                <p className="text-xs text-dhl-gray">Reservar espacio</p>
+              </div>
+            </Link>
+            <Link href="/incidentes">
+              <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2 active:scale-95 transition-transform hover:border-dhl-yellow border border-dhl-mid-gray">
+                <span className="text-2xl">⚠️</span>
+                <p className="text-sm font-bold text-dhl-dark">Incidentes</p>
+                <p className="text-xs text-dhl-gray">Reportar</p>
+              </div>
+            </Link>
           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-3xl p-5 shadow-sm">
-          <p className="text-5xl font-black text-dhl-dark">{availableDesksCount}</p>
-          <p className="text-sm text-dhl-gray mt-1">espacios disponibles ahora</p>
-          <p className="text-xs text-dhl-gray/70 mt-2">
-            Si terminas antes, libera tu espacio. Alguien más lo agradecerá. +20 Riffs 🙌
-          </p>
-          <Link
-            href="/desks"
-            className="block bg-dhl-dark text-white py-3 rounded-2xl text-sm font-bold text-center w-full mt-3"
-          >
-            Ver el mapa →
+
+        {/* ── Right column ── */}
+        <div className="space-y-5">
+          {/* Riffs card */}
+          <Link href="/profile">
+            <div className="bg-dhl-dark rounded-3xl p-5 shadow-xl">
+              <div className="flex items-center justify-between">
+                <p className="text-dhl-yellow text-xs font-black uppercase tracking-wide">🎸 Rockstar Path</p>
+                <span className="bg-dhl-yellow/20 text-dhl-yellow text-[10px] font-bold px-2 py-0.5 rounded-full">{riffsLevel}</span>
+              </div>
+              <p className="text-4xl font-black text-white leading-none mt-2">
+                {totalRiffs.toLocaleString("es-CL")}
+              </p>
+              <p className="text-white/50 text-sm mt-0.5">{riffsLevel}</p>
+              <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-dhl-yellow rounded-full transition-all"
+                  style={{ width: `${riffsProgress}%` }}
+                />
+              </div>
+              <p className="text-white/40 text-xs mt-1.5">
+                {riffsLevel !== "Rock Legend"
+                  ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
+                  : "¡Nivel máximo!"}
+              </p>
+            </div>
           </Link>
-        </div>
-      )}
 
-      {/* Riffs card */}
-      <Link href="/profile">
-        <div className="bg-dhl-dark rounded-3xl p-5 shadow-xl">
-          <div className="flex items-center justify-between">
-            <p className="text-dhl-yellow text-xs font-black uppercase tracking-wide">🎸 Rockstar Path</p>
-            <span className="bg-dhl-yellow/20 text-dhl-yellow text-[10px] font-bold px-2 py-0.5 rounded-full">{riffsLevel}</span>
+          {/* Info card */}
+          <div className="bg-dhl-yellow/10 border border-dhl-yellow rounded-2xl px-4 py-4">
+            <p className="text-xs font-bold text-dhl-dark mb-1">¿Cómo funciona?</p>
+            <ul className="text-xs text-dhl-dark/70 space-y-1 list-disc list-inside leading-relaxed">
+              <li>Reserva tu puesto desde el mapa</li>
+              <li>Usa carpooling para ganar +30 Riffs</li>
+              <li>Sube niveles en el Rockstar Path</li>
+            </ul>
           </div>
-          <p className="text-4xl font-black text-white leading-none mt-2">
-            {totalRiffs.toLocaleString("es-CL")}
-          </p>
-          <p className="text-white/50 text-sm mt-0.5">{riffsLevel}</p>
-          <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-dhl-yellow rounded-full transition-all"
-              style={{ width: `${riffsProgress}%` }}
-            />
-          </div>
-          <p className="text-white/40 text-xs mt-1.5">
-            {riffsLevel !== "Rock Legend"
-              ? `${riffsNext.toLocaleString("es-CL")} para siguiente nivel`
-              : "¡Nivel máximo!"}
-          </p>
         </div>
-      </Link>
-
-      {/* Quick action — un solo botón grande */}
-      <Link
-        href="/desks"
-        className="block bg-dhl-yellow text-dhl-dark w-full py-4 rounded-2xl font-bold text-sm text-center"
-      >
-        🗺️ Ver mapa de puestos
-      </Link>
+      </div>
     </div>
   );
 }

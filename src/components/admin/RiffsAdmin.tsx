@@ -18,9 +18,10 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  executive: "Executive",
-  professional: "Professional",
+  host: "Host",
+  executive: "Host",
   guest: "Visita",
+  professional: "Visita",
   admin: "Admin",
 };
 

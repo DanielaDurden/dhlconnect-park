@@ -10,8 +10,6 @@ export default async function ParkingPage() {
   const admin = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
   const today = new Date().toISOString().split("T")[0];
-  const dayOfWeek = new Date().getDay(); // 0=Sun,1=Mon
-  const isMonday = dayOfWeek === 1;
 
   const { data: profile } = await admin
     .from("profiles")
@@ -36,18 +34,11 @@ export default async function ParkingPage() {
 
   const myReservation = (reservations ?? []).find((r) => r.user_id === user!.id);
 
-  // Count occupied (available spots that have reservations)
-  const bookableSpots = enrichedSpots.filter(
-    (s) =>
-      s.spot_status === "available" ||
-      (s.spot_status === "director_reserved" && !isMonday)
-  );
-  const occupiedCount = bookableSpots.filter(
-    (s) => s.reservation?.status === "confirmed"
-  ).length;
+  const bookableSpots = enrichedSpots.filter((s) => s.spot_status === "available");
+  const occupiedCount = bookableSpots.filter((s) => s.reservation?.status === "confirmed").length;
 
   return (
-    <div className="px-4 py-5">
+    <div className="px-4 py-5 lg:px-8 lg:py-8">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-dhl-dark">Smart Parking</h1>
         <p className="text-dhl-gray text-sm mt-0.5">
@@ -93,7 +84,6 @@ export default async function ParkingPage() {
         spots={enrichedSpots}
         myProfile={profile!}
         today={today}
-        isMonday={isMonday}
         myReservationId={myReservation?.id ?? null}
         totalCapacity={bookableSpots.length}
         occupiedCount={occupiedCount}

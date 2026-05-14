@@ -12,11 +12,19 @@ export async function POST(req: NextRequest) {
   const action = body.action as RiffsAction;
   const ref_id = body.ref_id as string | undefined;
 
-  if (!action || !(action in RIFFS_POINTS)) {
+  const allowedActions: RiffsAction[] = [
+    "solidarity_release", "voluntary_release",
+    "checkin_carpooling", "carpool",
+    "early_checkout", "checkin_ontime",
+    "recover_base_penalty",
+  ];
+
+  if (!action || !allowedActions.includes(action)) {
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
 
-  const points = RIFFS_POINTS[action];
+  const pointsOverride = body.points as number | undefined;
+  const points = pointsOverride ?? RIFFS_POINTS[action];
   const admin = createAdminClient();
 
   const { error } = await admin.from("riffs_log").insert({

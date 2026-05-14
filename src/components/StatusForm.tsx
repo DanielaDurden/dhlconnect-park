@@ -139,7 +139,7 @@ export default function StatusForm({ profile, role, weekDates, myStatuses, teamS
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 lg:grid lg:grid-cols-[1fr_300px] lg:gap-6 lg:space-y-0 lg:items-start">
       {/* Toast */}
       {toast && (
         <div className="fixed top-16 left-0 right-0 mx-4 z-50">
@@ -215,8 +215,7 @@ export default function StatusForm({ profile, role, weekDates, myStatuses, teamS
         </div>
       </div>
 
-      {/* Team Status Today — hidden for executives */}
-      {role !== "executive" && <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
+      {role !== "host" && <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
         <div className="bg-dhl-dark px-4 py-3">
           <h2 className="text-white font-bold text-sm">
             Ritmo del equipo — hoy

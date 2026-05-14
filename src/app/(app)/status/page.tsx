@@ -40,7 +40,7 @@ export default async function StatusPage() {
     .eq("date", today);
 
   return (
-    <div className="px-4 py-5">
+    <div className="px-4 py-5 lg:px-8 lg:py-8">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-dhl-dark">Mi Estado</h1>
         <p className="text-dhl-gray text-sm mt-0.5">

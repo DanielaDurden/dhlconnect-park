@@ -15,13 +15,23 @@ export async function PATCH(
   if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { id } = await params;
-  const { status } = await req.json() as { status: string };
+  const { status, resolution_comment } = await req.json() as { status: string; resolution_comment?: string };
 
   if (!["open", "in_progress", "resolved"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
-  const { error } = await admin.from("incidents").update({ status }).eq("id", id);
+  if (status === "resolved" && !resolution_comment?.trim()) {
+    return NextResponse.json({ error: "Resolution comment required" }, { status: 400 });
+  }
+
+  const update: Record<string, unknown> = { status };
+  if (status === "resolved") {
+    update.resolution_comment = resolution_comment!.trim();
+    update.resolved_at = new Date().toISOString();
+  }
+
+  const { error } = await admin.from("incidents").update(update).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

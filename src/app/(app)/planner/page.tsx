@@ -25,8 +25,7 @@ export default async function PlannerPage() {
     .eq("id", user.id)
     .single();
 
-  // Redirect non-executives to home
-  if (profile?.role !== "executive" && profile?.role !== "admin") {
+  if (profile?.role !== "host" && profile?.role !== "admin") {
     redirect("/home");
   }
 
@@ -52,7 +51,7 @@ export default async function PlannerPage() {
     .eq("week_start", weekStart);
 
   return (
-    <div className="px-4 py-5">
+    <div className="px-4 py-5 lg:px-8 lg:py-8">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-dhl-dark">📅 Diseña tu semana</h1>
         <p className="text-dhl-gray text-sm mt-0.5">

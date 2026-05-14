@@ -37,9 +37,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ROLE_LABELS: Record<string, string> = {
-  executive: "Executive",
-  professional: "Professional",
+  host: "Host",
+  executive: "Host",
   guest: "Visita",
+  professional: "Visita",
 };
 
 export default function IncidentInbox({ incidents }: Props) {
@@ -48,26 +49,40 @@ export default function IncidentInbox({ incidents }: Props) {
   const [toast, setToast] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolutionComment, setResolutionComment] = useState("");
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: string, comment?: string) {
     setLoadingId(id);
     const res = await fetch(`/api/admin/incidents/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, resolution_comment: comment }),
     });
     setLoadingId(null);
     if (res.ok) {
       showToast(`Estado actualizado a "${STATUS_LABELS[status]}".`);
+      setResolvingId(null);
+      setResolutionComment("");
       startTransition(() => router.refresh());
     } else {
       showToast("Error al actualizar. Intenta de nuevo.");
     }
+  }
+
+  function startResolve(id: string) {
+    setResolvingId(id);
+    setResolutionComment("");
+  }
+
+  function cancelResolve() {
+    setResolvingId(null);
+    setResolutionComment("");
   }
 
   const filtered = filter === "all" ? incidents : incidents.filter((i) => i.status === filter);
@@ -151,7 +166,7 @@ export default function IncidentInbox({ incidents }: Props) {
                     Reabrir
                   </button>
                 )}
-                {inc.status !== "in_progress" && (
+                {inc.status !== "in_progress" && inc.status !== "resolved" && (
                   <button
                     onClick={() => updateStatus(inc.id, "in_progress")}
                     disabled={isPending || loadingId === inc.id}
@@ -160,16 +175,45 @@ export default function IncidentInbox({ incidents }: Props) {
                     {loadingId === inc.id ? "..." : "Marcar en curso"}
                   </button>
                 )}
-                {inc.status !== "resolved" && (
+                {inc.status !== "resolved" && resolvingId !== inc.id && (
                   <button
-                    onClick={() => updateStatus(inc.id, "resolved")}
+                    onClick={() => startResolve(inc.id)}
                     disabled={isPending || loadingId === inc.id}
                     className="text-xs px-3 py-1.5 rounded-lg border border-green-200 text-green-600 hover:bg-green-50 transition-colors disabled:opacity-50"
                   >
-                    {loadingId === inc.id ? "..." : "Marcar resuelto"}
+                    Marcar resuelto
                   </button>
                 )}
               </div>
+
+              {/* Resolution comment form */}
+              {resolvingId === inc.id && (
+                <div className="mt-3 space-y-2">
+                  <label className="text-xs font-bold text-dhl-gray">Comentario de resolución (obligatorio)</label>
+                  <textarea
+                    value={resolutionComment}
+                    onChange={(e) => setResolutionComment(e.target.value)}
+                    placeholder="Describe cómo se resolvió el incidente..."
+                    rows={2}
+                    className="w-full border border-dhl-mid-gray rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-dhl-dark resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => updateStatus(inc.id, "resolved", resolutionComment)}
+                      disabled={!resolutionComment.trim() || loadingId === inc.id}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:opacity-40"
+                    >
+                      {loadingId === inc.id ? "..." : "Confirmar resolución"}
+                    </button>
+                    <button
+                      onClick={cancelResolve}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-dhl-mid-gray text-dhl-gray hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
