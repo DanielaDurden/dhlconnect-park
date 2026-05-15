@@ -2,7 +2,7 @@
 **Fecha**: 11 de mayo de 2026
 **Versión**: 3.0.0 — Admin Panel completo (Centro de Control)
 **Commit**: `14674fe`
-**Producción**: https://dhlconnect-park.vercel.app
+**Producción**: https://dhl-stage.vercel.app
 
 ---
 
