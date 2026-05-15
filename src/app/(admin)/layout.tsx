@@ -65,7 +65,7 @@ export default async function AdminLayout({
             <Link
               key={item.href}
               href={item.href}
-              className="text-white/70 hover:text-white text-xs px-3 py-1.5 rounded-lg hover:bg-white/10 whitespace-nowrap transition-colors"
+              className="text-white/70 hover:text-white text-xs px-2.5 py-1.5 rounded-lg hover:bg-white/10 whitespace-nowrap transition-colors"
             >
               {item.label}
             </Link>

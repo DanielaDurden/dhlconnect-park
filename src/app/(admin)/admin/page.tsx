@@ -333,12 +333,13 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
           { href: "/admin/desks",     icon: "🗺️",  title: "Mapa Maestro",   desc: "Gestionar puestos" },
           { href: "/admin/incidents", icon: "⚠️",  title: "Incidentes",     desc: `${openIncidents ?? 0} abiertos` },
           { href: "/admin/rockstar",  icon: "🎸",  title: "Rockstar Path",  desc: "Leaderboard · ajustes" },
           { href: "/admin/reportes",  icon: "📊",  title: "Reportes",       desc: "Descarga histórica" },
+          { href: "/admin/users",     icon: "👥",  title: "Usuarios",       desc: "Parking por host" },
         ].map((item) => (
           <Link key={item.href} href={item.href}>
             <div className="bg-white rounded-2xl border border-dhl-mid-gray p-4 shadow-sm hover:border-dhl-yellow hover:shadow-md transition-all cursor-pointer">
