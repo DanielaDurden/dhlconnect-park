@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+
+const REMEMBER_KEY = "dhl_stage_remembered_email";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,10 +17,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
+  // Pre-fill saved email on mount
+  useEffect(() => {
+    const saved = localStorage.getItem(REMEMBER_KEY);
+    if (saved) {
+      setEmail(saved);
+      setRememberMe(true);
+    }
+  }, []);
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_KEY, email);
+    } else {
+      localStorage.removeItem(REMEMBER_KEY);
+    }
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -88,7 +105,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete={rememberMe ? "on" : "current-password"}
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   className="w-full border border-dhl-mid-gray rounded-xl px-4 py-3 pl-9 pr-10 text-sm text-dhl-dark placeholder:text-dhl-gray/60 focus:outline-none focus:ring-2 focus:ring-dhl-yellow focus:border-dhl-dark"
                 />
