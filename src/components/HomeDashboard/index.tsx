@@ -52,7 +52,7 @@ function WeekendBanner({ firstName }: { firstName: string }) {
 export default function HomeDashboard(props: HomeDashboardProps) {
   const weekend = props.isWeekend ? <WeekendBanner firstName={props.firstName} /> : null;
 
-  if (props.role === "host") {
+  if (props.role === "host" || props.role === "executive") {
     return <>{weekend}<HostHome
       firstName={props.firstName}
       isWeekend={props.isWeekend}
@@ -67,15 +67,10 @@ export default function HomeDashboard(props: HomeDashboardProps) {
     /></>;
   }
 
-  if (props.role === "guest" || props.role === "client") {
+  if (props.role === "guest" || props.role === "client" || props.role === "professional") {
     return <>{weekend}<GuestHome {...props} /></>;
   }
 
-  return (
-    <div className="px-4 py-5 space-y-4">
-      {weekend}
-      <h1 className="text-xl font-bold text-dhl-dark">Panel Admin</h1>
-      <p className="text-sm text-dhl-gray">Bienvenido, {props.firstName}.</p>
-    </div>
-  );
+  // Fallback: unknown role → render as guest
+  return <>{weekend}<GuestHome {...props} /></>;
 }
