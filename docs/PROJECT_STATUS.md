@@ -1,7 +1,7 @@
 # DHL Connect & Park — Estado del Proyecto
-**Fecha**: 11 de mayo de 2026
-**Versión**: 3.0.0 — Admin Panel completo (Centro de Control)
-**Commit**: `14674fe`
+**Fecha**: 15 de mayo de 2026
+**Versión**: 3.1.0 — Push Notifications · Host Parking Config · Admin Usuarios
+**Commit**: `pendiente`
 **Producción**: https://dhl-stage.vercel.app
 
 ---
@@ -16,6 +16,7 @@
 | Tailwind CSS | 3.4 | Estilos |
 | Supabase (`@supabase/ssr`) | 0.10.2 | Auth + DB |
 | next-pwa | 5.6.0 | Service Worker / PWA |
+| web-push | 3.6.7 | Push Notifications VAPID |
 | @sentry/nextjs | 10.52.0 | Error monitoring (production only) |
 
 **Colores DHL**: Rojo `#D40511` · Amarillo `#FFCD05`
@@ -27,11 +28,11 @@
 ```
 /                       → redirect a /home
 /login                  → autenticación email/password
-/home                   → dashboard por rol (Executive / Professional / Guest)
-/desks                  → mapa de puestos (professional / guest)
-/parking                → grid de estacionamiento (professional / guest)
-/planner                → planificador semanal (solo executive)
-/status                 → estado diario del colaborador (professional / guest)
+/home                   → dashboard por rol (Host / Guest / Professional)
+/desks                  → mapa de puestos (guest / professional)
+/parking                → grid de estacionamiento (guest / professional / host)
+/planner                → planificador semanal (solo host)
+/status                 → estado diario del colaborador (guest / professional)
 /incidentes             → reporte de incidentes (todos los roles)
 /profile                → perfil, nivel Riffs, historial
 
@@ -41,6 +42,7 @@
 /admin/incidents        → inbox de incidentes (admin)
 /admin/rockstar         → leaderboard + ajuste manual de Riffs (admin)
 /admin/reportes         → descarga CSV histórico (admin)
+/admin/users            → gestión de usuarios: toggle has_parking por host (admin)
 
 /api/auth/callback
 /api/desks/reserve          → POST/DELETE/PATCH reservas de puestos
@@ -50,6 +52,7 @@
 /api/riffs/award            → POST otorgamiento de Riffs
 /api/worst-case             → POST log demanda insatisfecha
 /api/accept-policy          → POST aceptar política (cookie + DB)
+/api/push/subscribe         → POST guardar suscripción push / DELETE eliminarla
 
 /api/admin/force-release            → DELETE cancelar reserva de puesto
 /api/admin/reserve-for-user         → POST reservar puesto para cualquier usuario
@@ -60,6 +63,7 @@
 /api/admin/force-release-parking    → DELETE cancelar reserva de parking
 /api/admin/reserve-parking-for-user → POST reservar parking para cualquier usuario
 /api/admin/parking-status           → PATCH toggle is_active en parking_spot
+/api/admin/user-parking             → PATCH toggle has_parking en profiles (por host)
 ```
 
 ---
@@ -68,15 +72,18 @@
 
 | Rol | Nav disponible | Descripción |
 |-----|---------------|-------------|
-| `executive` | Inicio · Planner · Incidentes | Directors/Managers con oficina asignada |
+| `host` | Inicio · Planner · Parking · Incidentes | Directors/Managers con oficina asignada |
+| `executive` | Igual a host | Legacy alias — soportado en código |
 | `professional` | Inicio · Puestos · Parking · Mi Estado · Incidentes | Colaboradores híbridos |
 | `guest` | Inicio · Puestos · Parking · Mi Estado · Incidentes | Visitantes, externos |
 | `admin` | /admin/* exclusivo — sin acceso a /home | Office Manager / TI |
-| `client` | Igual a professional | Legacy → migrado a `professional` |
+| `client` | Igual a professional | Legacy alias — soportado en código |
 
 **Regla de redirect**:
 - `(app)/layout.tsx` detecta rol `admin` → `redirect("/admin")` antes de renderizar cualquier página
 - `(admin)/layout.tsx` verifica rol con `createAdminClient()` → si no es admin, `redirect("/home")`
+
+**Compatibilidad legacy**: `HomeDashboard/index.tsx` y `DailyCard/index.tsx` aceptan tanto los roles nuevos (`host`, `guest`) como los legacy (`executive`, `professional`, `client`).
 
 ---
 
@@ -86,21 +93,21 @@
 - Desktop-first, `max-w-7xl`
 - Header oscuro: logo DHL + "Centro de Control" | nombre del admin + **Cerrar sesión**
 - Cerrar sesión: server action → `supabase.auth.signOut()` → `redirect("/login")`
-- Nav: Dashboard · 🗺️ Mapa · 🚗 Parking · ⚠️ Incidentes · 🎸 Rockstar · 📊 Reportes
+- Nav (7 items): Dashboard · 🗺️ Mapa · 🚗 Parking · ⚠️ Incidentes · 🎸 Rockstar · 📊 Reportes · 👥 Usuarios
 - Guard: usa `createAdminClient()` para leer perfil (bypasa RLS, evita loop)
 
 ### Dashboard (`/admin` → `admin/page.tsx`)
-Scorecards en grid:
+Scorecards en grid `lg:grid-cols-5`:
 - **Puestos hoy**: ocupación `N / 24 desks`
 - **Parking hoy**: ocupación `N / 22 spots`
 - **Demanda Insatisfecha**: 😞 count — siempre cara triste (métrica negativa)
-- **Sharing Rate**: ejecutivos que compartieron hoy
+- **Tasa de Adopción**: % de usuarios activos que reservaron puesto o parking este mes (query desde `riffs_log`)
 - **Green Score Semanal**: Riffs por carpooling esta semana
-- **Uso por Rol hoy**: breakdown Executive / Professional / Guest
+- **Uso por Rol hoy**: breakdown Host / Professional / Guest
 - **Inbox de incidentes**: últimos 5 con badge de status
 - **Top Riffs**: top 5 de la semana
 - Alerta amarilla si demanda insatisfecha ≥ 3
-- CTA "Optimizar espacios ahora →" → `/admin/desks`
+- Quick actions: Mapa · Smart Parking · Incidentes · Rockstar · Reportes · **Usuarios**
 
 ### Mapa Maestro (`/admin/desks` → `AdminDeskMap`)
 - Stats strip: Ocupados · Con check-in · Disponibles · Fuera de servicio
@@ -133,16 +140,22 @@ Scorecards en grid:
 - Date range picker + descarga CSV
 - → GET `/api/admin/report?from=&to=&type=`
 
+### Gestión de Usuarios (`/admin/users`)
+- Lista todos los hosts (role = 'host' o 'executive')
+- Toggle `has_parking` por usuario → PATCH `/api/admin/user-parking`
+- Permite al admin activar o desactivar acceso a parking por host
+- Componente cliente: `UserParkingToggle.tsx` (optimistic update)
+
 ---
 
 ## Gamificación — Riffs
 
 | Acción | Puntos | Rol |
 |--------|--------|-----|
-| Liberación solidaria | +50 | Executive / Professional |
-| Check-in con carpooling | +30 | Professional |
-| Early checkout | +20 | Professional |
-| Check-in a tiempo | +10 | Professional |
+| Liberación solidaria | +50 | Host / Professional |
+| Check-in con carpooling | +30 | Professional / Guest |
+| Early checkout | +20 | Professional / Guest |
+| Check-in a tiempo | +10 | Professional / Guest |
 | Ajuste manual admin | variable | Admin |
 
 **Niveles**: Opening Act (0–999) · Rising Star (1k–2.999) · Headliner (3k–7.999) · Rock Legend (8k+)
@@ -153,25 +166,47 @@ Scorecards en grid:
 
 ---
 
+## Push Notifications (v3.1)
+
+### Flujo completo
+1. `PushSubscription.tsx` (client component) se monta en `(app)/layout.tsx`
+2. Solicita permiso al usuario si `Notification.permission !== "granted"`
+3. Suscribe al service worker con VAPID public key
+4. Guarda la suscripción en `profiles.push_subscription` via POST `/api/push/subscribe`
+5. El SW custom (`worker/index.js`) maneja el evento `push` → `showNotification()`
+
+### Service Worker custom
+- `next.config.mjs` usa `customWorkerDir: "worker"` (next-pwa merges `worker/index.js`)
+- Handler `push`: muestra notificación con título + body del payload
+- Handler `notificationclick`: cierra la notificación y abre/enfoca `/home`
+
+### Variables de entorno requeridas
+```env
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=   # Public VAPID key (cliente)
+VAPID_PRIVATE_KEY=              # Private VAPID key (servidor)
+VAPID_EMAIL=                    # mailto: del administrador
+```
+
+---
+
 ## Componentes
 
 ```
 src/components/
   BottomNav.tsx
   PolicyModal.tsx
-  DeskMap.tsx                  ← toast en todas las acciones
-  ParkingGrid.tsx              ← toast en todas las acciones
+  PushSubscription.tsx          ← solicita permiso + guarda suscripción push
+  DeskMap.tsx                   ← toast en todas las acciones
+  ParkingGrid.tsx               ← toast en todas las acciones
 
   HomeDashboard/
-    index.tsx
-    ExecutiveHome.tsx          ← toast en reclamar base
-    ProfessionalHome.tsx       ← toast en liberar puesto
-    GuestHome.tsx              ← toast en liberar espacio
+    index.tsx                   ← soporta roles legacy (executive, professional, client)
+    HostHome.tsx
+    GuestHome.tsx               ← también usado por professional/client legacy
 
   DailyCard/
-    index.tsx
-    ExecutiveCard.tsx
-    ProfessionalCard.tsx
+    index.tsx                   ← soporta roles legacy
+    HostCard.tsx
     GuestCard.tsx
 
   admin/
@@ -180,6 +215,7 @@ src/components/
     IncidentInbox.tsx
     RiffsAdmin.tsx
     ReportDownload.tsx
+    UserParkingToggle.tsx       ← toggle client-side para has_parking
 ```
 
 **Patrón toast** (uniforme en toda la app):
@@ -203,7 +239,7 @@ function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null)
 ### Tablas
 | Tabla | Descripción |
 |-------|-------------|
-| `profiles` | role, area, policy_accepted_at |
+| `profiles` | role, area, policy_accepted_at, **push_subscription** (jsonb), **has_parking** (bool, default true) |
 | `desks` | 24 puestos, zonas A/B/C/GG, is_active |
 | `desk_reservations` | carpooling, checked_in, check_in_time, status |
 | `parking_spots` | spot_status, assigned_user_name, director_name, is_accessible, is_active |
@@ -211,9 +247,15 @@ function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null)
 | `incidents` | category, status (open/in_progress/resolved), location |
 | `riffs_log` | action, points, ref_id (anti-farming) |
 | `riffs_history` | archivo anual |
-| `weekly_plans` | planificador executive, solidarity_released |
+| `weekly_plans` | planificador host, solidarity_released |
 | `user_day_status` | estado diario professional/guest |
 | `worst_case_log` | log demanda insatisfecha |
+
+### Columnas añadidas en v3.1 (migration: `v4_push_parking.sql`)
+```sql
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS push_subscription jsonb;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS has_parking boolean NOT NULL DEFAULT true;
+```
 
 ### `createAdminClient()` vs `createClient()`
 - `createAdminClient()` → `SUPABASE_SERVICE_ROLE_KEY` → bypasa RLS — usar en API routes de admin y en `(admin)/layout.tsx`
@@ -230,6 +272,12 @@ Poner `redirect("/admin")` dentro de un page que ya está dentro del layout rend
 ### Floor plans admin
 - AdminDeskMap reutiliza coordenadas de `src/lib/floorPlan.ts`
 - AdminParkingMap tiene coordenadas inline (mismo canvas 600×950 que ParkingGrid)
+
+### Adopción KPI (corregido en v3.1)
+La tasa de adopción se calcula desde `riffs_log` (acciones `voluntary_release`, `solidarity_release`, `carpool`, `checkin_carpooling`, `recover_base_penalty`), no desde `weekly_plans.solidarity_released`. El campo anterior solo contaba liberaciones, perdiendo carpooling y otras acciones.
+
+### Roles legacy
+Los roles `executive`, `professional` y `client` siguen existiendo en DB (no se renombraron en producción). El código los trata como aliases: `host || executive`, `guest || professional || client`. Esto evita una migración masiva de datos.
 
 ---
 
@@ -251,10 +299,9 @@ Poner `redirect("/admin")` dentro de un page que ya está dentro del layout rend
 - [ ] **Iconos PWA**: crear `icon-192x192.png` e `icon-512x512.png` con branding DHL
 
 ### Media
-- [ ] **Push Notifications**: avisos de check-in
 - [ ] **Resend email**: confirmación de reserva / alerta en incidentes críticos
 - [ ] **QR Check-in**: flujo físico de check-in en oficina
-- [ ] **Admin: gestión de usuarios**: asignar roles y puestos fijos desde panel
+- [ ] **Enviar push desde admin**: endpoint para notificar a usuarios desde el panel
 
 ### Baja
 - [ ] **Tests**: reglas de negocio de reservas y riffs
@@ -268,6 +315,9 @@ Poner `redirect("/admin")` dentro de un page que ya está dentro del layout rend
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_EMAIL=mailto:admin@dhl.com
 SENTRY_DSN=
 SENTRY_ORG=nanolab
 SENTRY_PROJECT=javascript-nextjs
@@ -283,13 +333,22 @@ npm install && npm run dev
 
 Supabase:
 1. Ejecutar `docs/schema.sql`
-2. Ejecutar migraciones en `docs/migrations/`
+2. Ejecutar migraciones en `docs/migrations/` (v3_stage.sql → v4_push_parking.sql)
 3. Asignar roles:
 ```sql
 UPDATE profiles SET role='admin' WHERE email = 'admin@dhl.com';
-UPDATE profiles SET role='executive' WHERE email IN ('...', '...');
+UPDATE profiles SET role='host' WHERE email IN ('...', '...');
 ```
 
 ---
 
-*Actualizado por Claude Code — 2026-05-11 — v3.0.0*
+## Changelog
+
+| Versión | Fecha | Cambios |
+|---------|-------|---------|
+| 3.1.0 | 2026-05-15 | Push Notifications (VAPID end-to-end), has_parking toggle por host, Admin Usuarios, adopción KPI fix, login Recordar sesión, soporte roles legacy |
+| 3.0.0 | 2026-05-11 | Admin Panel completo (Centro de Control), desktop layout, bug fixes |
+
+---
+
+*Actualizado por Claude Code — 2026-05-15 — v3.1.0*
