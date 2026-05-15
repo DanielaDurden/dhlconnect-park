@@ -13,7 +13,7 @@ export default async function ParkingPage() {
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("id, full_name, status_type")
+    .select("id, full_name, status_type, role, has_parking")
     .eq("id", user!.id)
     .single();
 
@@ -61,6 +61,21 @@ export default async function ParkingPage() {
               {spots?.find((s) => s.id === myReservation.spot_id)?.spot_number}
             </p>
             <p className="text-xs text-green-600">Nivel -2</p>
+          </div>
+        </div>
+      )}
+
+      {/* Host sin parking asignado */}
+      {(profile?.role === "host" || profile?.role === "executive") && profile?.has_parking === false && !myReservation && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex items-start gap-3">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-amber-700">Sin parking asignado</p>
+            <p className="text-amber-600 text-xs mt-0.5">
+              No tienes un espacio fijo. Puedes reservar cualquier espacio disponible.
+            </p>
           </div>
         </div>
       )}

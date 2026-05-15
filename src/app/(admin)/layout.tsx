@@ -60,6 +60,7 @@ export default async function AdminLayout({
             { href: "/admin/incidents", label: "⚠️ Incidentes" },
             { href: "/admin/rockstar", label: "🎸 Rockstar" },
             { href: "/admin/reportes", label: "📊 Reportes" },
+            { href: "/admin/users", label: "👥 Usuarios" },
           ].map((item) => (
             <Link
               key={item.href}

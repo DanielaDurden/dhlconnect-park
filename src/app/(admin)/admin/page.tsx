@@ -107,17 +107,24 @@ export default async function AdminDashboard() {
   const monthStart = `${today.slice(0, 7)}-01`;
   const [
     { count: totalHosts },
-    { data: hostReleasedThisMonth },
+    { data: hostActionsThisMonth },
     { count: totalGuests },
-    { data: guestReservationsThisMonth },
+    { data: guestDeskResThisMonth },
+    { data: guestParkingResThisMonth },
   ] = await Promise.all([
     admin.from("profiles").select("id", { count: "exact", head: true }).in("role", ["host", "executive"]),
-    admin.from("weekly_plans")
+    // Host adoption: any positive action (release, carpool) or base recovery this month
+    admin.from("riffs_log")
       .select("user_id")
-      .eq("solidarity_released", true)
-      .gte("week_start", monthStart),
+      .in("action", ["voluntary_release", "solidarity_release", "carpool", "checkin_carpooling", "recover_base_penalty"])
+      .gte("created_at", monthStart),
     admin.from("profiles").select("id", { count: "exact", head: true }).eq("role", "guest"),
+    // Guest adoption: reserved a desk or parking at least once this month
     admin.from("desk_reservations")
+      .select("user_id")
+      .gte("date", monthStart)
+      .eq("status", "confirmed"),
+    admin.from("parking_reservations")
       .select("user_id")
       .gte("date", monthStart)
       .eq("status", "confirmed"),
@@ -173,9 +180,10 @@ export default async function AdminDashboard() {
   const showAlert = demandaInsatisfecha >= 3;
 
   // Adoption KPIs
-  const uniqueHostsReleased = new Set((hostReleasedThisMonth ?? []).map((r: { user_id: string }) => r.user_id)).size;
-  const hostAdoptionPct = (totalHosts ?? 0) > 0 ? Math.round((uniqueHostsReleased / (totalHosts ?? 1)) * 100) : 0;
-  const uniqueGuestsReserved = new Set((guestReservationsThisMonth ?? []).map((r: { user_id: string }) => r.user_id)).size;
+  const uniqueHostsActive = new Set((hostActionsThisMonth ?? []).map((r: { user_id: string }) => r.user_id)).size;
+  const hostAdoptionPct = (totalHosts ?? 0) > 0 ? Math.round((uniqueHostsActive / (totalHosts ?? 1)) * 100) : 0;
+  const allGuestRes = [...(guestDeskResThisMonth ?? []), ...(guestParkingResThisMonth ?? [])];
+  const uniqueGuestsReserved = new Set(allGuestRes.map((r: { user_id: string }) => r.user_id)).size;
   const guestAdoptionPct = (totalGuests ?? 0) > 0 ? Math.round((uniqueGuestsReserved / (totalGuests ?? 1)) * 100) : 0;
 
   return (
@@ -267,7 +275,7 @@ export default async function AdminDashboard() {
         <div className="bg-white rounded-2xl border border-dhl-mid-gray p-5 shadow-sm">
           <p className="text-[11px] font-bold text-dhl-gray uppercase tracking-wide mb-1">% Adopción Hosts (mes)</p>
           <p className="text-4xl font-black text-dhl-dark">{hostAdoptionPct}%</p>
-          <p className="text-xs text-dhl-gray mt-1">{uniqueHostsReleased} / {totalHosts ?? 0} hosts liberaron al menos una vez</p>
+          <p className="text-xs text-dhl-gray mt-1">{uniqueHostsActive} / {totalHosts ?? 0} hosts con al menos una acción</p>
           <div className="mt-3 h-1.5 bg-dhl-mid-gray rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${hostAdoptionPct >= 70 ? "bg-green-500" : hostAdoptionPct >= 40 ? "bg-amber-400" : "bg-red-500"}`}

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import PolicyModal from "@/components/PolicyModal";
+import PushSubscription from "@/components/PushSubscription";
 
 export default async function AppLayout({
   children,
@@ -69,6 +70,9 @@ export default async function AppLayout({
 
       {/* ── Policy Modal ── */}
       {needsPolicy && <PolicyModal />}
+
+      {/* ── Push Subscription ── */}
+      <PushSubscription />
 
       {/* ── Body: sidebar + content ── */}
       <div className="flex flex-1 max-w-7xl mx-auto w-full">
