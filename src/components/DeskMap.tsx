@@ -78,7 +78,6 @@ export default function DeskMap({
   const deskMap = Object.fromEntries(desks.map((d) => [d.code, d]));
   const hasReservation = !!myReservationId;
   const isHost = myRole === "host" || myRole === "executive";
-  const isGuest = !isHost && myRole !== "admin";
 
   const myReleasedToday = isHost && releasedSet.has(myProfile.id);
 
