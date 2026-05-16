@@ -2,7 +2,6 @@
 
 import type { UserRole } from "@/types";
 import HostCard from "./HostCard";
-import GuestCard from "./GuestCard";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -54,12 +53,7 @@ export default function DailyCard(props: DailyCardProps) {
       <p className="text-xs font-semibold text-dhl-gray/60 uppercase tracking-widest mb-4">{greeting}</p>
 
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8">
-        {(props.role === "host" || props.role === "executive") && (
-          <HostCard firstName={props.firstName} onComplete={onComplete} />
-        )}
-        {(props.role === "guest" || props.role === "client" || props.role === "professional") && (
-          <GuestCard firstName={props.firstName} availableDesksCount={props.availableDesksCount} />
-        )}
+        <HostCard firstName={props.firstName} onComplete={onComplete} />
       </div>
     </div>
   );

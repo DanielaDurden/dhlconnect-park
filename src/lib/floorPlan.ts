@@ -59,7 +59,7 @@ export const ROOM_BOXES: RoomBox[] = [
   { label: "Sala",       x: 4,   y: 426 },
   { label: "Ops",        x: 4,   y: 498, muted: true },
   { label: "GG",         x: 4,   y: 554 },
-  { label: "Sala de Reunión", x: 72, y: 560, w: 248, h: 48 },
+  { label: "Meeting Room", x: 72, y: 560, w: 248, h: 48, muted: true },
 ];
 
 export interface GroupBorder {

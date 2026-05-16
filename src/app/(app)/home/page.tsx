@@ -121,11 +121,8 @@ export default async function HomePage() {
     dailyActionCompleted = true;
   } else if (role === "host" || role === "executive") {
     dailyActionCompleted = !!weeklyPlanToday;
-  } else if (role === "professional") {
-    dailyActionCompleted =
-      deskReservationToday?.checked_in === true ||
-      deskReservationToday?.status === "cancelled";
   } else {
+    // Guest y otros perfiles van directo al dashboard — no hay daily card
     dailyActionCompleted = true;
   }
 

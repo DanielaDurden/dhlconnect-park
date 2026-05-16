@@ -23,7 +23,7 @@ export async function POST() {
     .single();
 
   const role = profile?.role;
-  if (role !== "host") {
+  if (role !== "host" && role !== "executive") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

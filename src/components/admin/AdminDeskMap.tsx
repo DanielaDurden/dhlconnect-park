@@ -35,30 +35,26 @@ interface Props {
   today: string;
 }
 
-type AdminDeskState = "occupied_in" | "occupied_pending" | "available" | "cowork" | "out_of_service";
+type AdminDeskState = "occupied" | "available" | "out_of_service";
 
 const ROLE_LABELS: Record<string, string> = {
-  executive: "Executive",
-  professional: "Professional",
+  host: "Host",
+  executive: "Host",
   guest: "Visita",
+  professional: "Visita",
   admin: "Admin",
 };
 
 function getDeskState(desk: AdminDeskData): AdminDeskState {
   if (!desk.is_active) return "out_of_service";
-  if (desk.reservation) {
-    return desk.reservation.checked_in ? "occupied_in" : "occupied_pending";
-  }
-  if (desk.type === "cowork") return "cowork";
+  if (desk.reservation) return "occupied";
   return "available";
 }
 
 const STATE_STYLE: Record<AdminDeskState, { bg: string; dot: string }> = {
-  occupied_in:      { bg: "bg-red-500 border-red-700 text-white",     dot: "bg-red-500" },
-  occupied_pending: { bg: "bg-orange-400 border-orange-600 text-white", dot: "bg-orange-400" },
-  cowork:           { bg: "bg-dhl-yellow border-yellow-500 text-dhl-dark", dot: "bg-dhl-yellow" },
-  available:        { bg: "bg-green-500 border-green-700 text-white",  dot: "bg-green-500" },
-  out_of_service:   { bg: "bg-gray-300 border-gray-400 text-gray-500", dot: "bg-gray-400" },
+  occupied:      { bg: "bg-red-500 border-red-700 text-white",    dot: "bg-red-500" },
+  available:     { bg: "bg-green-500 border-green-700 text-white", dot: "bg-green-500" },
+  out_of_service:{ bg: "bg-gray-300 border-gray-400 text-gray-500", dot: "bg-gray-400" },
 };
 
 export default function AdminDeskMap({ desks, users, today }: Props) {
@@ -125,7 +121,6 @@ export default function AdminDeskMap({ desks, users, today }: Props) {
   // Stats
   const totalActive = desks.filter((d) => d.is_active).length;
   const occupied = desks.filter((d) => d.reservation?.status === "confirmed").length;
-  const checkedIn = desks.filter((d) => d.reservation?.checked_in).length;
   const outOfService = desks.filter((d) => !d.is_active).length;
 
   return (
@@ -139,10 +134,9 @@ export default function AdminDeskMap({ desks, users, today }: Props) {
       )}
 
       {/* Stats strip */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { label: "Ocupados", value: occupied, color: "text-red-600" },
-          { label: "Con check-in", value: checkedIn, color: "text-orange-500" },
           { label: "Disponibles", value: totalActive - occupied, color: "text-green-600" },
           { label: "Fuera de servicio", value: outOfService, color: "text-gray-500" },
         ].map((s) => (
@@ -156,11 +150,9 @@ export default function AdminDeskMap({ desks, users, today }: Props) {
       {/* Legend */}
       <div className="bg-white rounded-2xl border border-dhl-mid-gray px-5 py-3 flex flex-wrap gap-4">
         {[
-          { dot: "bg-red-500",     label: "Ocupado (check-in)" },
-          { dot: "bg-orange-400",  label: "Reservado (sin check-in)" },
-          { dot: "bg-green-500",   label: "Disponible" },
-          { dot: "bg-dhl-yellow",  label: "Co-Work libre" },
-          { dot: "bg-gray-400",    label: "Fuera de servicio" },
+          { dot: "bg-red-500",   label: "Ocupado" },
+          { dot: "bg-green-500", label: "Disponible" },
+          { dot: "bg-gray-400",  label: "Fuera de servicio" },
         ].map((item) => (
           <div key={item.label} className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full ${item.dot}`} />
@@ -273,10 +265,6 @@ export default function AdminDeskMap({ desks, users, today }: Props) {
                     <p className="text-xs text-dhl-gray">{selected.reservation.profiles.email}</p>
                     <p className="text-xs text-dhl-gray">
                       {ROLE_LABELS[selected.reservation.profiles.role] ?? selected.reservation.profiles.role}
-                      {" · "}
-                      {selected.reservation.checked_in
-                        ? <span className="text-green-600 font-semibold">Check-in realizado</span>
-                        : <span className="text-orange-500 font-semibold">Sin check-in</span>}
                     </p>
                   </div>
                 ) : selected.assigned_profile ? (

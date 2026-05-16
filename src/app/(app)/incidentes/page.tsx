@@ -14,7 +14,7 @@ export default async function IncidentesPage() {
     admin.from("incidents").select("*").eq("user_id", user!.id).order("created_at", { ascending: false }).limit(10),
   ]);
 
-  const isHost = profile?.role === "host";
+  const isHost = profile?.role === "host" || profile?.role === "executive";
 
   return (
     <div className="px-4 py-5 lg:px-8 lg:py-8">

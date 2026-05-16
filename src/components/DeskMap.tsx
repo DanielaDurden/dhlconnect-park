@@ -77,8 +77,8 @@ export default function DeskMap({
   const releasedSet = new Set(releasedHostIds);
   const deskMap = Object.fromEntries(desks.map((d) => [d.code, d]));
   const hasReservation = !!myReservationId;
-  const isGuest = myRole === "guest" || myRole === "client";
-  const isHost = myRole === "host";
+  const isHost = myRole === "host" || myRole === "executive";
+  const isGuest = !isHost && myRole !== "admin";
 
   const myReleasedToday = isHost && releasedSet.has(myProfile.id);
 
@@ -285,9 +285,7 @@ export default function DeskMap({
     const myDeskIsReleased = isMyDesk && myReleasedToday;
     const myDeskHasGuest = isMyDesk && !!selected.reservation && selected.reservation.user_id !== myProfile.id;
 
-    const canBook = isGuest
-      ? (state === "available") && !hasReservation && selected.type === "cowork"
-      : (state === "available") && !hasReservation;
+    const canBook = (state === "available") && !hasReservation;
 
     const isMyGuestReservation = state !== "mine" && selected.reservation?.user_id === myProfile.id;
 
@@ -379,14 +377,6 @@ export default function DeskMap({
                     {loading ? "..." : "Recuperar"}
                   </button>
                 </div>
-              </div>
-            )}
-
-            {/* Guest: solo Co-Work restriction */}
-            {isGuest && state === "available" && selected.type !== "cowork" && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-                <p className="text-sm text-blue-700 font-medium">Solo puestos Co-Work</p>
-                <p className="text-xs text-blue-600 mt-0.5">Como Guest, solo puedes reservar puestos Co-Work disponibles.</p>
               </div>
             )}
 

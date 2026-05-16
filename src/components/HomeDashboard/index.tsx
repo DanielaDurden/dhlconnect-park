@@ -71,6 +71,5 @@ export default function HomeDashboard(props: HomeDashboardProps) {
     return <>{weekend}<GuestHome {...props} /></>;
   }
 
-  // Fallback: unknown role → render as guest
   return <>{weekend}<GuestHome {...props} /></>;
 }

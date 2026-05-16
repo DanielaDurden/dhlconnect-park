@@ -25,7 +25,7 @@ export default async function PlannerPage() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "host" && profile?.role !== "admin") {
+  if (profile?.role !== "host" && profile?.role !== "executive" && profile?.role !== "admin") {
     redirect("/home");
   }
 

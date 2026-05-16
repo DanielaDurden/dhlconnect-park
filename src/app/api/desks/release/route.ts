@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// POST /api/desks/release — professional early checkout (+20 Riffs) or solidarity release (+50)
+// POST /api/desks/release — solidarity release (+50 Riffs)
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -32,16 +32,14 @@ export async function POST(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Award Riffs
-  const action = solidarity ? "solidarity_release" : "early_checkout";
-  const points = solidarity ? 50 : 20;
+  if (solidarity) {
+    await admin.from("riffs_log").insert({
+      user_id: user.id,
+      action: "solidarity_release",
+      points: 50,
+      ref_id: reservation_id,
+    });
+  }
 
-  await admin.from("riffs_log").insert({
-    user_id: user.id,
-    action,
-    points,
-    ref_id: reservation_id,
-  });
-
-  return NextResponse.json({ ok: true, action, points });
+  return NextResponse.json({ ok: true });
 }

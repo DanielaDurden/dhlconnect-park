@@ -4,10 +4,12 @@ import { redirect } from "next/navigation";
 import { getRiffsLevel } from "@/types";
 
 const ROLE_LABEL: Record<string, string> = {
-  host:    "Host",
-  guest:   "Visita",
-  admin:   "Administrador",
-  client:  "Colaborador",
+  host:         "Host",
+  executive:    "Host",
+  guest:        "Visita",
+  professional: "Visita",
+  client:       "Visita",
+  admin:        "Administrador",
 };
 
 const LEVEL_ICON: Record<string, string> = {
@@ -41,12 +43,10 @@ export default async function ProfilePage() {
   const riffsInfo = getRiffsLevel(totalRiffs);
 
   const ACTION_LABEL: Record<string, string> = {
-    solidarity_release:   "Liberación solidaria",
+    solidarity_release:   "Liberación voluntaria",
     voluntary_release:    "Liberación voluntaria",
     checkin_carpooling:   "Carpooling",
     carpool:              "Carpooling",
-    early_checkout:       "Liberación anticipada",
-    checkin_ontime:       "Acceso a tiempo",
     recover_base_penalty: "Recuperación de base",
     manual_adjustment:    "Ajuste manual",
   };

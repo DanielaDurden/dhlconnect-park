@@ -84,7 +84,7 @@ export default async function AdminDashboard() {
     admin.from("profiles").select("id", { count: "exact", head: true }).in("role", ["executive", "host"]),
     admin.from("riffs_log")
       .select("points")
-      .eq("action", "checkin_carpooling")
+      .in("action", ["checkin_carpooling", "carpool"])
       .gte("created_at", weekStart),
     admin.from("incidents")
       .select("id, category, description, location, status, created_at, profiles!inner(full_name)")

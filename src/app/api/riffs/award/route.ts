@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
   const allowedActions: RiffsAction[] = [
     "solidarity_release", "voluntary_release",
     "checkin_carpooling", "carpool",
-    "early_checkout", "checkin_ontime",
     "recover_base_penalty",
   ];
 

@@ -215,7 +215,7 @@ export default function StatusForm({ profile, role, weekDates, myStatuses, teamS
         </div>
       </div>
 
-      {role !== "host" && <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
+      {role !== "host" && role !== "executive" && <div className="bg-white rounded-2xl shadow-sm border border-dhl-mid-gray overflow-hidden">
         <div className="bg-dhl-dark px-4 py-3">
           <h2 className="text-white font-bold text-sm">
             Ritmo del equipo — hoy

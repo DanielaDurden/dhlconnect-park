@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
     user_id: target_user_id,
     action: "manual_adjustment",
     points,
+    ref_id: null,
     note: note ?? null,
   });
 

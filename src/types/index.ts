@@ -31,14 +31,12 @@ export type IncidentCategory =
   | "other";
 export type IncidentStatus = "open" | "in_progress" | "resolved";
 
-// Riffs gamification — v3 simplified actions
+// Riffs gamification — v3 final actions
 export type RiffsAction =
-  | "solidarity_release"    // +50 — legacy alias (kept for existing data)
+  | "solidarity_release"    // +50 — legacy alias (kept for existing DB data)
   | "voluntary_release"     // +50 — host libera su espacio voluntariamente
-  | "checkin_carpooling"    // +30 — legacy alias
+  | "checkin_carpooling"    // +30 — legacy alias (kept for existing DB data)
   | "carpool"               // +30 — host confirma que viene en carpool
-  | "early_checkout"        // +20 — legacy
-  | "checkin_ontime"        // +10 — legacy
   | "recover_base_penalty"  // -50 — host recupera base con reserva activa de guest
   | "manual_adjustment";    // variable — ajuste manual del admin
 
@@ -66,8 +64,6 @@ export const RIFFS_POINTS: Record<RiffsAction, number> = {
   voluntary_release:     50,
   checkin_carpooling:    30,
   carpool:               30,
-  early_checkout:        20,
-  checkin_ontime:        10,
   recover_base_penalty: -50,
   manual_adjustment:      0, // override per request
 };
