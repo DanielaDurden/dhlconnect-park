@@ -25,6 +25,7 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie"];
 
 export default function HostHome({
   firstName,
+  isWeekend,
   weeklyPlanToday,
   weeklyPlansWeek,
   totalRiffs,
@@ -100,13 +101,13 @@ export default function HostHome({
     if (res.ok) {
       const data = await res.json() as { hadGuestReservation: boolean; riffsPenalty: number };
       if (data.hadGuestReservation) {
-        showToast("Base recuperada. -50 Riffs. El Guest fue notificado.");
+        showToast("Base reclamada. -50 Riffs. El Guest fue notificado.");
       } else {
-        showToast("Tu espacio ha sido recuperado.");
+        showToast("Tu espacio ha sido reclamado.");
       }
       router.refresh();
     } else {
-      showToast("Error al recuperar. Intenta de nuevo.");
+      showToast("Error al reclamar. Intenta de nuevo.");
     }
   }
 
@@ -134,16 +135,13 @@ export default function HostHome({
 
         {/* ── Left column ── */}
         <div className="space-y-5">
+
           {/* Status card */}
           {isReleased ? (
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-5 shadow-sm">
-              <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">🟢 LIBERADO HOY</p>
-              <p className="text-xl font-black text-green-900 mt-1">Tu espacio está disponible</p>
-              <p className="text-sm text-green-700/70 mt-1">
-                {hasGuestOnMyDesk
-                  ? "Un colaborador ya reservó tu espacio."
-                  : "El equipo puede reservarlo ahora."}
-              </p>
+              <p className="text-[10px] font-black text-green-600 uppercase tracking-widest">🟢 LIBERADA HOY</p>
+              <p className="text-xl font-black text-green-900 mt-1">CoWork Premium activo</p>
+              <p className="text-sm text-green-700/70 mt-1">Tu espacio está disponible para el equipo.</p>
 
               <div className="mt-4 pt-4 border-t border-green-200">
                 {!confirmRecover ? (
@@ -152,13 +150,13 @@ export default function HostHome({
                     disabled={recovering}
                     className="w-full flex items-center justify-center gap-2 bg-white border-2 border-red-200 text-red-600 font-bold py-2.5 rounded-2xl text-sm hover:bg-red-50 transition-colors disabled:opacity-50"
                   >
-                    🚩 {recovering ? "Recuperando..." : "Recuperar mi base"}
+                    🚩 {recovering ? "Reclamando..." : "Reclamar mi base"}
                   </button>
                 ) : (
                   <div className="space-y-2">
                     {hasGuestOnMyDesk && (
                       <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-xs text-red-700 text-center">
-                        Un colaborador ya reservó tu espacio. Recuperar costará <strong>−50 Riffs</strong> y se les notificará.
+                        Un colaborador ya reservó tu espacio. Reclamar costará <strong>−50 Riffs</strong> y se les notificará.
                       </div>
                     )}
                     <div className="flex gap-2">
@@ -178,12 +176,15 @@ export default function HostHome({
                     </div>
                   </div>
                 )}
+                {!confirmRecover && (
+                  <p className="text-[10px] text-green-700/50 text-center mt-1.5">Uso exclusivo para emergencias o falta de reserva</p>
+                )}
               </div>
             </div>
           ) : (
             <div className="bg-gradient-to-br from-dhl-yellow/20 to-dhl-yellow/5 rounded-3xl p-5 shadow-sm">
-              <p className="text-[10px] font-black text-dhl-dark/50 uppercase tracking-widest">🔒 RESERVADO</p>
-              <p className="text-xl font-black text-dhl-dark mt-1">Tu espacio está asegurado.</p>
+              <p className="text-[10px] font-black text-dhl-dark/50 uppercase tracking-widest">🔒 RESERVADA</p>
+              <p className="text-xl font-black text-dhl-dark mt-1">Tu oficina está asegurada.</p>
               <p className="text-sm text-dhl-dark/60 mt-1">Tu espacio te espera hoy.</p>
               <button
                 onClick={handleRelease}
@@ -199,7 +200,9 @@ export default function HostHome({
           <Link href="/planner">
             <div className="bg-white rounded-3xl p-5 shadow-sm border border-dhl-mid-gray">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-black text-dhl-dark">📅 Mi semana</p>
+                <p className="text-sm font-black text-dhl-dark">
+                  📅 {isWeekend ? "Próxima semana" : "Mi semana"}
+                </p>
                 <span className="text-[10px] text-dhl-gray font-medium">Editar →</span>
               </div>
               {weeklyPlansWeek.length === 0 ? (
@@ -233,6 +236,7 @@ export default function HostHome({
 
         {/* ── Right column ── */}
         <div className="space-y-5">
+
           {/* Riffs card */}
           <Link href="/profile">
             <div className="bg-dhl-dark rounded-3xl p-5 shadow-xl">
@@ -255,7 +259,7 @@ export default function HostHome({
             </div>
           </Link>
 
-          {/* Impacto */}
+          {/* Impacto de la semana */}
           {solidarityCount > 0 && (
             <div className="bg-white rounded-3xl p-5 shadow-sm">
               <div className="flex items-start gap-3">
@@ -274,11 +278,11 @@ export default function HostHome({
 
           {/* Quick actions */}
           <div className="grid grid-cols-2 gap-3">
-            <Link href="/desks">
+            <Link href="/planner">
               <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col gap-2 active:scale-95 transition-transform hover:border-dhl-yellow border border-dhl-mid-gray">
-                <span className="text-2xl">🗺️</span>
-                <p className="text-sm font-bold text-dhl-dark">Puestos</p>
-                <p className="text-xs text-dhl-gray">Mapa de hoy</p>
+                <span className="text-2xl">📅</span>
+                <p className="text-sm font-bold text-dhl-dark">Planner</p>
+                <p className="text-xs text-dhl-gray">Tu semana</p>
               </div>
             </Link>
             <Link href="/incidentes">
