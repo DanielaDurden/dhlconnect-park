@@ -116,15 +116,8 @@ export default async function HomePage() {
 
   const isWeekend = rawDay === 0 || rawDay === 6;
 
-  let dailyActionCompleted: boolean;
-  if (isWeekend) {
-    dailyActionCompleted = true;
-  } else if (role === "host" || role === "executive") {
-    dailyActionCompleted = !!weeklyPlanToday;
-  } else {
-    // Guest y otros perfiles van directo al dashboard — no hay daily card
-    dailyActionCompleted = true;
-  }
+  // Hosts go directly to HostHome — release/keep decision is handled via HostHome buttons
+  const dailyActionCompleted = true;
 
   const rawName = profile?.full_name ?? user!.email?.split("@")[0] ?? "";
   const firstName = rawName.split(" ")[0] || "hey";
